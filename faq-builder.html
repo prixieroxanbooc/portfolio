@@ -76,7 +76,7 @@
         <!-- license unlock -->
         <div style="background:#eaf6ec;border:1px solid #cfe9d4;border-radius:10px;padding:12px;margin-bottom:14px">
           <div style="font-weight:600;font-size:13px;margin-bottom:6px">🔓 Already purchased? Unlock unlimited</div>
-          <div style="font-size:12px;color:var(--muted);margin-bottom:8px">Enter the <b>transaction number</b> the Telegram bot gave you after approval to unlock the embed code + unlimited customizing &amp; downloads on this device.</div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:8px">Enter the <b>transaction number</b> the Telegram bot gave you after approval to unlock the embed code + unlimited customizing. <b>For security, this clears on refresh</b> — just re-enter your number anytime.</div>
           <div style="display:flex;gap:8px;flex-wrap:wrap">
             <input type="text" id="txninput" placeholder="TXN-XXXXXXXX-X" style="flex:1;min-width:160px;text-transform:uppercase">
             <button class="btn btn-primary btn-sm" onclick="unlockTxn()">Unlock</button>
@@ -200,8 +200,8 @@ function apply(){
   refreshEmbed();
 }
 
-// ---- license / transaction-number unlock ----
-const LICENSE_KEY = 'faq_license';
+// ---- license / transaction-number unlock (in-memory only; cleared on refresh) ----
+let licensedCode = '';   // NOT persisted — a browser refresh re-locks; user must re-enter the TXN
 function validTxn(code){
   const m = /^TXN-([0-9A-Z]{8})-([0-9A-Z])$/.exec(String(code||'').trim().toUpperCase());
   if(!m) return false;
@@ -209,7 +209,7 @@ function validTxn(code){
   let sum=0; for(const c of m[1]) sum += c.charCodeAt(0);
   return chars[sum%36] === m[2];
 }
-function isLicensed(){ try { return validTxn(localStorage.getItem(LICENSE_KEY)||''); } catch(e){ return false; } }
+function isLicensed(){ return validTxn(licensedCode); }
 // Set to your Apps Script /exec URL to verify transaction numbers against the Google Sheet.
 // Leave blank to fall back to local checksum-only validation.
 const SHEET_VERIFY_URL = 'https://script.google.com/macros/s/AKfycbww5au6GtF5rnvc7jLCskzHcQO4ICEYwrx8G0IZhpf7Cdq7mUH9pw2l-SKwUIN6hzdK/exec';
@@ -233,7 +233,7 @@ function buildEmbed(cfg){
 function refreshEmbed(){ if(isLicensed()){ const el=document.getElementById('embedout'); if(el) el.textContent = buildEmbed(currentConfig()); } }
 function applyLicense(){
   if(!isLicensed()) return;
-  const code=(localStorage.getItem(LICENSE_KEY)||'').toUpperCase();
+  const code=licensedCode.toUpperCase();
   document.getElementById('lockedview').style.display='none';
   document.getElementById('unlockedview').style.display='block';
   document.getElementById('txninput').value=code;
@@ -246,7 +246,7 @@ async function unlockTxn(){
   if(!validTxn(code)){ msg.innerHTML='<span style="color:var(--danger)">Invalid format — use the TXN-… number the Telegram bot gave you.</span>'; return; }
   msg.innerHTML='Verifying…';
   const ok = await verifyTxnServer(code);
-  if(ok){ try{ localStorage.setItem(LICENSE_KEY, code); }catch(e){} applyLicense(); }
+  if(ok){ licensedCode = code; applyLicense(); }
   else { msg.innerHTML='<span style="color:var(--danger)">Transaction number not found. You get one after purchasing via the Telegram bot.</span>'; }
 }
 function copyEmbed(){
@@ -288,9 +288,8 @@ document.getElementById('logofile').addEventListener('change', e => {
   r.readAsDataURL(f);
 });
 
-// boot with the sample
+// boot with the sample — always starts LOCKED; unlock is per-session (cleared on refresh)
 loadSample();
-applyLicense();   // auto-unlock if a valid transaction number was saved here before
 </script>
 </body>
 </html>
