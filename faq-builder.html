@@ -76,7 +76,7 @@
 
         <div style="background:var(--blue-soft);border-radius:10px;padding:12px;margin-bottom:14px">
           <div style="font-weight:600;font-size:13px;margin-bottom:4px">📥 Step A — download your config</div>
-          <div style="font-size:12px;color:var(--muted);margin-bottom:10px">Once you're happy with the preview, download your config file. You'll <b>upload this file to the Telegram bot</b> — the bot will ask for it — so your snippet comes with <b>your exact</b> brand, color &amp; FAQs. (Logo is included only if it's a URL.)</div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:10px">Once you're happy with the preview, download your config file. You'll <b>upload this file to the Telegram bot</b> — the bot will ask for it — so your snippet comes with <b>your exact</b> brand, logo, color &amp; FAQs. (Your uploaded logo is included in the file.)</div>
           <button class="btn btn-primary btn-sm" onclick="downloadCfg()">⬇ Download config (.json)</button>
           <span id="cfgcopied" style="margin-left:8px;color:var(--success);font-size:12px"></span>
         </div>
@@ -172,11 +172,12 @@ function apply(){
   setTimeout(()=>document.getElementById('status').textContent='',2500);
 }
 // The buyer downloads this config (.json) and UPLOADS it to the Telegram bot,
-// which returns an embed snippet built from THEIR exact config (brand/color/FAQs).
-// (Logo travels only if it's a URL — data-URL logos are omitted to keep it portable.)
+// which returns an embed snippet built from THEIR exact config (brand/logo/color/FAQs).
+// Logo is included whether it's a URL or an uploaded image (data URL) — the .json
+// file has no size limit like a chat message would.
 function slimConfig(cfg){
   const slim = { brand:cfg.brand, tagline:cfg.tagline, accent:cfg.accent, greeting:cfg.greeting, categories:cfg.categories };
-  if (cfg.logo && /^https?:/i.test(cfg.logo)) slim.logo = cfg.logo;
+  if (cfg.logo) slim.logo = cfg.logo;   // include uploaded logo (data URL) or logo URL
   return slim;
 }
 function downloadCfg(){
