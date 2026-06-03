@@ -14,7 +14,7 @@
     accent: '#0047AB',
     logo: null,
     greeting: 'Hi! 👋 I can help with common questions. Pick a topic to get started.',
-    cta: { label: '✨ Want this on your site? Build your own →', url: 'https://prixieroxanbooc.github.io/portfolio/faq-builder.html' },
+    cta: { label: 'Want this on your site? Build your own', url: 'https://prixieroxanbooc.github.io/portfolio/faq-builder.html' },
     categories: [
       { name: 'General', items: [
         { q: 'What is Novabank?', a: 'Novabank is a modern digital banking platform that helps individuals and businesses manage finances securely through digital accounts, payments, transfers, savings products, and API-powered banking solutions.' },
@@ -116,10 +116,10 @@
       .root { font-family: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif; }
       /* keep a normal cursor inside the widget even if the host page hides it (e.g. custom cursor) */
       .root, .panel, .head, .body, .bubble, .label, .empty, .foot, .chips { cursor: auto; }
-      .fab, .chip, .qbtn, .back, .x, .cta-btn { cursor: pointer; }
+      .fab, .chip, .qbtn, .back, .x, .cta-mini { cursor: pointer; }
       .search { cursor: text; }
-      .cta-btn { display:inline-block; margin:2px 0 14px; background:${accent}; color:#fff; font-weight:600; font-size:13.5px; padding:9px 14px; border-radius:10px; text-decoration:none; }
-      .cta-btn:hover { filter: brightness(1.08); }
+      .cta-mini { margin-left: 6px; text-decoration: none; opacity: .4; font-size: 12px; transition: opacity .15s; }
+      .cta-mini:hover { opacity: 1; }
       .fab {
         position: fixed; bottom: 22px; right: 22px; width: 60px; height: 60px;
         border-radius: 50%; border: none; cursor: pointer; z-index: 2147483000;
@@ -193,7 +193,11 @@
        <button class="x" aria-label="Close">${ICON_X}</button>`));
     const body = el('div', { class: 'body' });
     panel.appendChild(body);
-    panel.appendChild(el('div', { class: 'foot' }, 'FAQ assistant · ' + escapeHtml(cfg.brand)));
+    const footText = 'FAQ assistant · ' + escapeHtml(cfg.brand) +
+      ((cfg.cta && cfg.cta.url)
+        ? ` <a class="cta-mini" href="${escapeHtml(cfg.cta.url)}" target="_blank" rel="noopener" title="${escapeHtml(cfg.cta.label || 'Get this chatbot for your site')}">✨</a>`
+        : '');
+    panel.appendChild(el('div', { class: 'foot' }, footText));
     wrap.appendChild(panel);
 
     function escapeHtmlLocal() {}
@@ -206,9 +210,6 @@
     function home() {
       body.innerHTML = '';
       const greet = el('div', { class: 'bubble' }); greet.appendChild(textFrag(cfg.greeting)); body.appendChild(greet);
-      if (cfg.cta && cfg.cta.url) {
-        body.appendChild(el('a', { class: 'cta-btn', href: cfg.cta.url, target: '_blank', rel: 'noopener' }, escapeHtml(cfg.cta.label || 'Learn more')));
-      }
       const search = el('input', { class: 'search', type: 'text', placeholder: 'Search questions…' });
       body.appendChild(search);
       search.addEventListener('input', () => {
