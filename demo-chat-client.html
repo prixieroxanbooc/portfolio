@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Demo · MCP Chat Client</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Public+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Inter:wght@400;500;600&family=Public+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
 <style>
   .chat { display:flex; flex-direction:column; height:540px; }
@@ -51,7 +51,7 @@
         <div class="quick">
           <button class="btn btn-ghost btn-sm" onclick="ask('Summarize my unread billing emails')">Summarize billing emails</button>
           <button class="btn btn-ghost btn-sm" onclick="ask('Add a row to the reconciliation sheet')">Append to a sheet</button>
-          <button class="btn btn-ghost btn-sm" onclick="ask('Delete last month\\'s archive folder')">Try a destructive action</button>
+          <button class="btn btn-ghost btn-sm" onclick="ask('Delete last month\'s archive folder')">Try a destructive action</button>
         </div>
         <div style="display:flex;gap:8px;align-items:center;padding:0 14px 6px">
           <input type="password" id="apikey" placeholder="Anthropic API key — optional, enables live LLM" style="flex:1;font-size:13px">
@@ -76,6 +76,17 @@
           <tr><td>Slides</td><td><span class="badge-live">online</span></td></tr>
         </table>
         <p style="color:var(--muted);font-size:13px;margin-top:14px">The client discovers each server's tools via <span class="mono">tools/list</span> and forwards calls with the user's identity. Destructive tools are blocked by the gateway's safe-defaults policy.</p>
+      </div>
+
+      <div class="panel panel-pad" style="margin-top:20px">
+        <h3 style="margin-bottom:6px">Connect an MCP server</h3>
+        <p style="color:var(--muted);font-size:13px;margin:0 0 12px">Point the client at any Streamable-HTTP MCP server. It runs the <span class="mono">initialize</span> → <span class="mono">tools/list</span> handshake live and lists the tools it discovers. The server must allow browser (CORS) access.</p>
+        <label class="fld">MCP server URL</label>
+        <input type="text" id="mcpurl" placeholder="https://your-mcp-server.example.com/mcp">
+        <label class="fld">Bearer token <span style="font-weight:400">(optional)</span></label>
+        <input type="password" id="mcptoken" placeholder="paste a token if the server requires one">
+        <button class="btn btn-primary btn-sm" style="margin-top:14px" onclick="connectMcp()">Connect &amp; list tools</button>
+        <div id="mcpresult" style="margin-top:14px;font-size:13.5px"></div>
       </div>
     </div>
   </div>
@@ -134,7 +145,7 @@ function reply(text){
              answer:'Done — appended 1 row to <b>Recon!A42:D42</b>. The sheet now has 41 reconciled entries for the period.' };
   if(t.includes('delete')||t.includes('remove')||t.includes('archive')||t.includes('drop'))
     return { tool:`drive.<span class="tn">delete_file</span>(...) → 🛡️ blocked`,
-             answer:'I can\\'t do that — <b>delete</b> is a destructive tool and it\\'s disabled by default by the gateway\\'s safe-defaults policy. An admin would need to enable it per-profile first.' };
+             answer:'I can\'t do that — <b>delete</b> is a destructive tool and it\'s disabled by default by the gateway\'s safe-defaults policy. An admin would need to enable it per-profile first.' };
   return { tool:null, answer:'In the real client this would route through the LLM, which decides whether to call an MCP tool. This demo recognizes a few sample intents — try the quick buttons below.' };
 }
 
@@ -179,8 +190,62 @@ function dlChat(){
   const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='chat-transcript-demo.json';
   document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},1500);
 }
+// ---- live MCP server connection (Streamable HTTP / JSON-RPC) ----
+async function rpc(url, token, method, params, sessionId){
+  const headers = { 'content-type':'application/json', 'accept':'application/json, text/event-stream' };
+  if(token) headers['authorization'] = 'Bearer ' + token;
+  if(sessionId) headers['mcp-session-id'] = sessionId;
+  const body = { jsonrpc:'2.0', id: String(Date.now()), method };
+  if(params !== undefined) body.params = params;
+  const res = await fetch(url, { method:'POST', headers, body: JSON.stringify(body) });
+  const sid = res.headers.get('mcp-session-id') || sessionId;
+  const ct = res.headers.get('content-type') || '';
+  const text = await res.text();
+  let json;
+  if(ct.includes('text/event-stream')){
+    text.split(/\r?\n/).filter(l=>l.startsWith('data:')).forEach(l=>{
+      try{ const o = JSON.parse(l.slice(5).trim()); if(o.result || o.error) json = o; }catch(e){}
+    });
+  } else {
+    try{ json = JSON.parse(text); }catch(e){}
+  }
+  if(!res.ok && !json) throw new Error('HTTP ' + res.status + ' — ' + text.slice(0,140));
+  if(json && json.error) throw new Error(json.error.message || JSON.stringify(json.error));
+  return { json, sid };
+}
+async function connectMcp(){
+  const url = document.getElementById('mcpurl').value.trim();
+  const token = document.getElementById('mcptoken').value.trim();
+  const out = document.getElementById('mcpresult');
+  if(!url){ out.innerHTML = '<span style="color:var(--danger)">Enter an MCP server URL.</span>'; return; }
+  out.innerHTML = '<span class="typing"><span></span><span></span><span></span></span> connecting…';
+  try{
+    const init = await rpc(url, token, 'initialize', { protocolVersion:'2024-11-05', capabilities:{}, clientInfo:{ name:'portfolio-demo-client', version:'1.0.0' } });
+    const sid = init.sid;
+    const srv = init.json && init.json.result && init.json.result.serverInfo;
+    // best-effort initialized notification
+    fetch(url, { method:'POST', headers: Object.assign({'content-type':'application/json','accept':'application/json, text/event-stream'}, token?{authorization:'Bearer '+token}:{}, sid?{'mcp-session-id':sid}:{}), body: JSON.stringify({ jsonrpc:'2.0', method:'notifications/initialized' }) }).catch(()=>{});
+    const tl = await rpc(url, token, 'tools/list', {}, sid);
+    const tools = (tl.json && tl.json.result && tl.json.result.tools) || [];
+    let html = '<div class="badge-live">connected'+(srv?(' · '+esc(srv.name||'')):'')+'</div>';
+    if(tools.length){
+      html += '<div style="color:var(--muted);margin:10px 0 6px">Discovered <b>'+tools.length+'</b> tools:</div>';
+      html += '<div style="max-height:200px;overflow:auto;display:flex;flex-direction:column;gap:6px">';
+      tools.slice(0,40).forEach(t=>{ html += '<div class="mono" style="font-size:12px;background:var(--blue-soft);padding:6px 10px;border-radius:8px">'+esc(t.name)+(t.description?'<span style="color:var(--muted);font-weight:400"> — '+esc(t.description.slice(0,70))+'</span>':'')+'</div>'; });
+      html += '</div>';
+      if(tools.length>40) html += '<div style="color:var(--muted);font-size:12px;margin-top:6px">… and '+(tools.length-40)+' more</div>';
+    } else {
+      html += '<div style="color:var(--muted);margin-top:10px">Connected, but no tools were returned.</div>';
+    }
+    out.innerHTML = html;
+  }catch(e){
+    out.innerHTML = '<span style="color:var(--danger)">Could not connect: '+esc(e.message)+'</span>'+
+      '<div style="color:var(--muted);font-size:12px;margin-top:8px">If this is a CORS error, the server must send <span class="mono">Access-Control-Allow-Origin</span> headers to be reachable from a browser. Servers without browser CORS can only be reached from a backend client.</div>';
+  }
+}
+
 // greeting
-add('bot','Hi! I\\'m a demo assistant connected to MCP servers. Ask me to check email, update a sheet, or try a destructive action to see the safety policy. (All data here is fabricated.)');
+add('bot','Hi! I\'m a demo assistant connected to MCP servers. Ask me to check email, update a sheet, or try a destructive action to see the safety policy. You can also connect your own MCP server on the right. (All data here is fabricated.)');
 </script>
 </body>
 </html>

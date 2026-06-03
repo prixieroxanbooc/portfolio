@@ -5,10 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Demo · Large-Spreadsheet Filter & Billing Console</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Public+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Inter:wght@400;500;600&family=Public+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
 <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="brand-pdf.js"></script>
 </head>
 <body>
 
@@ -205,7 +206,9 @@ function dlReport(){
   const total = f.reduce((s,x)=>s+x['Amount'],0);
   const fee = feeFor(f);
   const summary = [
-    ['BILLING REPORT — DEMO (sample data only)'],
+    ['NovaBank — Merchant Settlement Billing Report'],
+    ['Banking Built Around You · Fictional demo brand — sample data only'],
+    [],
     ['Period', document.getElementById('month').value],
     ['Direction', dir==='in'?'Incoming (QRPH)':'Outgoing (Disburse)'],
     ['Merchant code', MERCHANT],
@@ -223,24 +226,56 @@ function dlReport(){
 }
 function dlInvoice(){
   const f = filtered(); if(!f.length){ alert('Run step 3 first.'); return; }
-  if(!window.jspdf){ alert('PDF library still loading.'); return; }
+  if(!window.jspdf || !window.NovaBrand){ alert('PDF libraries still loading — try again in a second.'); return; }
   const dir = document.getElementById('dir').value;
+  const gross = f.reduce((s,x)=>s+x['Amount'],0);
   const fee = feeFor(f);
-  const { jsPDF } = window.jspdf;
-  const d = new jsPDF({unit:'pt', format:'a4'}); const M=56; let y=70;
-  d.setFont('helvetica','bold'); d.setFontSize(18); d.text('INVOICE', M, y); y+=10;
-  d.setFontSize(9); d.setFont('helvetica','italic'); d.setTextColor(140);
-  d.text('DEMO — sample data only', M, y+8); y+=34;
-  d.setTextColor(20); d.setFont('helvetica','normal'); d.setFontSize(11);
-  const line=(k,v)=>{ d.text(k,M,y); d.text(String(v),539,y,{align:'right'}); y+=20; };
-  line('Period', document.getElementById('month').value);
-  line('Direction', dir==='in'?'Incoming (QRPH)':'Outgoing (Disburse)');
-  line('Merchant code', MERCHANT);
-  line('SETTLED transactions', f.length.toLocaleString());
-  y+=6; d.setDrawColor(210); d.line(M,y,539,y); y+=24;
-  d.setFont('helvetica','bold'); d.setFontSize(13);
-  d.text('AMOUNT DUE', M, y); d.text(peso(fee), 539, y, {align:'right'});
-  d.save('invoice-demo.pdf');
+  const { jsPDF } = window.jspdf; const B = window.NovaBrand; const C = B.C;
+  const d = new jsPDF({unit:'pt', format:'a4'});
+  const W = d.internal.pageSize.getWidth(); const M = 40;
+  let y = B.header(d, {title:'INVOICE'});
+
+  // meta row
+  d.setFont('helvetica','normal'); d.setFontSize(9.5); d.setTextColor(...C.darkGray);
+  d.text('Invoice No.', M, y);
+  d.text('Billed to', W-M, y, {align:'right'});
+  d.setFont('helvetica','bold'); d.setFontSize(11); d.setTextColor(...C.navy);
+  d.text('INV-2025-'+String(f.length).padStart(4,'0'), M, y+16);
+  d.text('Nova Business · Merchant Services', W-M, y+16, {align:'right'});
+  y += 44;
+
+  // table header
+  d.setFillColor(...C.lightGray); d.rect(M, y, W-2*M, 26, 'F');
+  d.setFont('helvetica','bold'); d.setFontSize(9); d.setTextColor(...C.darkGray);
+  d.text('DESCRIPTION', M+12, y+17); d.text('VALUE', W-M-12, y+17, {align:'right'});
+  y += 26;
+
+  const rows = [
+    ['Billing period', document.getElementById('month').value],
+    ['Settlement type', dir==='in'?'Incoming (QRPH)':'Outgoing (Disburse)'],
+    ['Merchant code', MERCHANT],
+    ['Rows scanned', SCANNED.toLocaleString()],
+    ['SETTLED transactions', f.length.toLocaleString()],
+    ['Gross settled amount', B.php(gross)],
+    ['Fee basis', dir==='in'?'max(amount x 0.7%, PHP 1.00)':'flat PHP 3.50 per txn'],
+  ];
+  d.setFont('helvetica','normal'); d.setFontSize(10.5);
+  rows.forEach((r,i)=>{
+    if(i%2){ d.setFillColor(...C.zebra); d.rect(M, y, W-2*M, 22, 'F'); }
+    d.setTextColor(...C.darkGray); d.text(r[0], M+12, y+15);
+    d.setTextColor(...C.navy); d.text(String(r[1]), W-M-12, y+15, {align:'right'});
+    y += 22;
+  });
+  y += 20;
+
+  // amount-due band
+  d.setFillColor(...C.blue); d.roundedRect(M, y, W-2*M, 54, 10, 10, 'F');
+  d.setTextColor(...C.white); d.setFont('helvetica','bold');
+  d.setFontSize(13); d.text('AMOUNT DUE', M+18, y+33);
+  d.setFontSize(19); d.text(B.php(fee), W-M-18, y+34, {align:'right'});
+
+  B.footer(d);
+  d.save('NovaBank-invoice-demo.pdf');
 }
 </script>
 </body>

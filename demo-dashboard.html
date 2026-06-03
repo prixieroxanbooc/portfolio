@@ -5,9 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Demo · AI Usage Analytics Dashboard</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Public+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Inter:wght@400;500;600&family=Public+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="brand-pdf.js"></script>
 </head>
 <body>
 
@@ -140,31 +141,59 @@ const DEPTS = [
   ['Credit & Risk',22,15],['Branch network',26,12],['Unassigned',8,0],
 ];
 function exportCsv(){
-  let csv = 'AI USAGE ANALYTICS — DEMO (sample data only)\n\nKPI,Value\n';
+  let csv = 'NovaBank — AI Platform Usage Report\n';
+  csv += 'Banking Built Around You,Fictional demo brand — sample data only\n\nKPI,Value\n';
   KPIS.forEach(k=> csv += `${k[0]},${k[1]}\n`);
   csv += '\nDepartment,Members,Active\n';
   DEPTS.forEach(d=> csv += `${d[0]},${d[1]},${d[2]}\n`);
   const blob = new Blob([csv], {type:'text/csv'});
   const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
-  a.download='ai-usage-kpis-demo.csv'; document.body.appendChild(a); a.click();
+  a.download='NovaBank-ai-usage-kpis-demo.csv'; document.body.appendChild(a); a.click();
   setTimeout(()=>{URL.revokeObjectURL(a.href); a.remove();},1500);
 }
 function exportPdf(){
-  if(!window.jspdf){ alert('PDF library still loading.'); return; }
-  const { jsPDF } = window.jspdf;
-  const d = new jsPDF({unit:'pt', format:'a4'}); const M=56; let y=64;
-  d.setFont('helvetica','bold'); d.setFontSize(17); d.text('AI Usage Analytics — Report', M, y); y+=8;
-  d.setFontSize(9); d.setFont('helvetica','italic'); d.setTextColor(140);
-  d.text('DEMO — sample data only', M, y+8); y+=34;
-  d.setTextColor(20); d.setFont('helvetica','bold'); d.setFontSize(12); d.text('Key metrics', M, y); y+=20;
-  d.setFont('helvetica','normal'); d.setFontSize(11);
-  KPIS.forEach(k=>{ d.text(k[0],M,y); d.text(String(k[1]),300,y,{align:'right'}); y+=18; });
-  y+=14; d.setFont('helvetica','bold'); d.setFontSize(12); d.text('By department',M,y); y+=20;
-  d.setFont('helvetica','normal'); d.setFontSize(11);
-  d.text('Team',M,y); d.text('Members',360,y,{align:'right'}); d.text('Active',460,y,{align:'right'}); y+=16;
-  d.setDrawColor(220); d.line(M,y-6,460,y-6);
-  DEPTS.forEach(t=>{ d.text(t[0],M,y); d.text(String(t[1]),360,y,{align:'right'}); d.text(String(t[2]),460,y,{align:'right'}); y+=16; });
-  d.save('ai-usage-report-demo.pdf');
+  if(!window.jspdf || !window.NovaBrand){ alert('PDF libraries still loading.'); return; }
+  const { jsPDF } = window.jspdf; const B = window.NovaBrand; const C = B.C;
+  const d = new jsPDF({unit:'pt', format:'a4'});
+  const W = d.internal.pageSize.getWidth(); const M = 40;
+  let y = B.header(d, {title:'AI USAGE'});
+
+  d.setTextColor(...C.navy); d.setFont('helvetica','bold'); d.setFontSize(15);
+  d.text('AI Platform — Usage Report', M, y); y += 8;
+  d.setFont('helvetica','italic'); d.setFontSize(9); d.setTextColor(...C.darkGray);
+  d.text('Sample analytics — fictional demo data.', M, y+13); y += 36;
+
+  // KPI cards: 3 columns x 2 rows
+  const gap = 12, cols = 3;
+  const cardW = (W - 2*M - (cols-1)*gap) / cols, cardH = 56;
+  KPIS.forEach((k,i)=>{
+    const col = i % cols, row = Math.floor(i / cols);
+    const x = M + col*(cardW+gap), cy = y + row*(cardH+gap);
+    d.setFillColor(...C.lightGray); d.roundedRect(x, cy, cardW, cardH, 8, 8, 'F');
+    d.setTextColor(...C.blue); d.setFont('helvetica','bold'); d.setFontSize(20);
+    d.text(String(k[1]), x+14, cy+30);
+    d.setTextColor(...C.darkGray); d.setFont('helvetica','normal'); d.setFontSize(8.5);
+    d.text(String(k[0]).toUpperCase(), x+14, cy+45);
+  });
+  y += 2*(cardH+gap) + 16;
+
+  // department table
+  d.setTextColor(...C.navy); d.setFont('helvetica','bold'); d.setFontSize(12);
+  d.text('By department', M, y); y += 14;
+  d.setFillColor(...C.navy); d.rect(M, y, W-2*M, 24, 'F');
+  d.setTextColor(...C.white); d.setFont('helvetica','bold'); d.setFontSize(9);
+  d.text('TEAM', M+12, y+16); d.text('MEMBERS', W-M-110, y+16, {align:'right'}); d.text('ACTIVE', W-M-12, y+16, {align:'right'});
+  y += 24;
+  d.setFont('helvetica','normal'); d.setFontSize(10.5);
+  DEPTS.forEach((t,i)=>{
+    if(i%2){ d.setFillColor(...C.zebra); d.rect(M, y, W-2*M, 22, 'F'); }
+    d.setTextColor(...C.navy); d.text(t[0], M+12, y+15);
+    d.text(String(t[1]), W-M-110, y+15, {align:'right'}); d.text(String(t[2]), W-M-12, y+15, {align:'right'});
+    y += 22;
+  });
+
+  B.footer(d, 'Fictional demo — sample analytics only.');
+  d.save('NovaBank-ai-usage-report-demo.pdf');
 }
 </script>
 </body>

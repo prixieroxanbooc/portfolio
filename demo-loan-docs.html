@@ -5,10 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Demo · Loan Document Generator</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Public+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Inter:wght@400;500;600&family=Public+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
 <script src="https://unpkg.com/docx@8.5.0/build/index.umd.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="brand-pdf.js"></script>
 </head>
 <body>
 
@@ -140,46 +141,71 @@ function saveBlob(blob, filename){
   setTimeout(()=>{ URL.revokeObjectURL(url); a.remove(); }, 1500);
 }
 
+function productName(bundle){ return bundle==='vehicle' ? 'Nova Auto Loan' : 'Nova Flex Loan'; }
+
 function downloadDocx(){
   const v = vals();
   if(!window.docx){ alert('Document library still loading — try again in a second.'); return; }
-  const { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType } = window.docx;
-  const title = (v.bundle==='vehicle'?'VEHICLE':'PARTNER') + ' LOAN AGREEMENT';
+  const { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, BorderStyle } = window.docx;
+  const NAVY = '0A1F44', BLUE = '0047AB', GRAY = '8A93A3';
+  const product = productName(v.bundle);
   const p = (children, opts={}) => new Paragraph({ spacing:{after:200}, ...opts, children });
-  const r = (t, o={}) => new TextRun({ text:t, ...o });
+  const r = (t, o={}) => new TextRun({ text:t, font:'Calibri', ...o });
   const doc = new Document({ sections:[{ children:[
-    p([r(title,{bold:true,size:30})], {alignment:AlignmentType.CENTER, heading:HeadingLevel.HEADING_1}),
-    p([r('DEMO DOCUMENT — sample data only. Not a real agreement.',{italics:true,color:'888888',size:18})], {alignment:AlignmentType.CENTER}),
-    p([r('This Agreement is entered into by and between the Lender and ',{}), r(v.name,{bold:true}), r(' (the "Borrower").')]),
-    p([r('The Borrower acknowledges a loan in the principal amount of '), r('₱'+v.amount,{bold:true}), r(' ('), r(v.words,{italics:true}), r('), payable over a term of '), r(v.term+' months',{bold:true}), r('.')]),
-    p([r('Bundle: '+(v.bundle==='vehicle'?'Vehicle loan (24 fields)':'Ride-hailing partner loan (30 fields)'))]),
-    p([r('Remaining clauses are populated from the template’s {{placeholders}} by the production service.',{color:'888888'})]),
-    p([r('_______________________________',{})]),
-    p([r('Borrower signature over printed name')]),
+    p([r('NovaBank',{bold:true,size:40,color:BLUE})], {alignment:AlignmentType.CENTER, spacing:{after:40}}),
+    p([r('Banking Built Around You',{size:18,color:GRAY,italics:true})], {alignment:AlignmentType.CENTER, spacing:{after:240}}),
+    p([r('LOAN AGREEMENT — '+product.toUpperCase(),{bold:true,size:28,color:NAVY})], {alignment:AlignmentType.CENTER, heading:HeadingLevel.HEADING_1}),
+    p([r('Fictional demo document — sample data only. Not a real agreement.',{italics:true,color:GRAY,size:16})], {alignment:AlignmentType.CENTER, spacing:{after:300}}),
+    p([r('This Agreement is entered into by and between '), r('NovaBank',{bold:true}), r(' (the "Lender") and '), r(v.name,{bold:true}), r(' (the "Borrower").')]),
+    p([r('The Borrower acknowledges a loan in the principal amount of '), r('₱'+v.amount,{bold:true}), r(' ('), r(v.words,{italics:true}), r('), payable over a term of '), r(v.term+' months',{bold:true}), r(' under the '), r(product,{bold:true,color:BLUE}), r(' program.')]),
+    p([r('KEY TERMS',{bold:true,size:20,color:NAVY})], {spacing:{before:200,after:120}}),
+    p([r('Borrower: ',{bold:true}), r(v.name)]),
+    p([r('Principal: ',{bold:true}), r('₱'+v.amount)]),
+    p([r('Term: ',{bold:true}), r(v.term+' months')]),
+    p([r('Product: ',{bold:true}), r(product)]),
+    p([r('Remaining clauses are populated from the template’s {{placeholders}} by the production service. This is a non-binding demonstration document.',{color:GRAY})], {spacing:{before:200}}),
+    p([r('_______________________________')], {spacing:{before:400}}),
+    p([r('Borrower signature over printed name',{color:GRAY,size:18})]),
   ]}]});
-  Packer.toBlob(doc).then(b => saveBlob(b, 'loan-document-demo.docx'));
+  Packer.toBlob(doc).then(b => saveBlob(b, 'NovaBank-loan-agreement-demo.docx'));
 }
 
 function downloadPdf(){
   const v = vals();
-  if(!window.jspdf){ alert('PDF library still loading — try again in a second.'); return; }
-  const { jsPDF } = window.jspdf;
+  if(!window.jspdf || !window.NovaBrand){ alert('PDF libraries still loading — try again in a second.'); return; }
+  const { jsPDF } = window.jspdf; const B = window.NovaBrand; const C = B.C;
+  const product = productName(v.bundle);
   const d = new jsPDF({unit:'pt', format:'a4'});
-  const M=56; let y=70;
-  d.setFont('helvetica','bold'); d.setFontSize(16);
-  d.text((v.bundle==='vehicle'?'VEHICLE':'PARTNER')+' LOAN AGREEMENT', 297, y, {align:'center'}); y+=22;
-  d.setFont('helvetica','italic'); d.setFontSize(9); d.setTextColor(140);
-  d.text('DEMO DOCUMENT — sample data only. Not a real agreement.', 297, y, {align:'center'}); y+=30;
-  d.setTextColor(20); d.setFont('helvetica','normal'); d.setFontSize(11);
-  const wrap = t => d.splitTextToSize(t, 595-M*2);
+  const W = d.internal.pageSize.getWidth(); const M = 40;
+  let y = B.header(d, {title:'LOAN'});
+
+  d.setTextColor(...C.navy); d.setFont('helvetica','bold'); d.setFontSize(15);
+  d.text('Loan Agreement — '+product, M, y); y += 8;
+  d.setFont('helvetica','italic'); d.setFontSize(9); d.setTextColor(...C.darkGray);
+  d.text('Sample agreement generated from the form values — fictional demo data.', M, y+13); y += 36;
+
+  d.setTextColor(...C.navy); d.setFont('helvetica','normal'); d.setFontSize(11);
+  const wrap = t => d.splitTextToSize(t, W-2*M);
   const para = t => { wrap(t).forEach(line=>{ d.text(line, M, y); y+=16; }); y+=8; };
-  para('This Agreement is entered into by and between the Lender and '+v.name+' (the "Borrower").');
-  para('The Borrower acknowledges a loan in the principal amount of ₱'+v.amount+' ('+v.words+'), payable over a term of '+v.term+' months.');
-  para('Bundle: '+(v.bundle==='vehicle'?'Vehicle loan (24 fields)':'Ride-hailing partner loan (30 fields)'));
-  d.setTextColor(140); para('Remaining clauses are populated from the template placeholders by the production service.');
-  y+=30; d.setTextColor(20); d.text('_______________________________', M, y); y+=16;
+  para('This Agreement is entered into by and between NovaBank (the "Lender") and '+v.name+' (the "Borrower").');
+  para('The Borrower acknowledges a loan in the principal amount of PHP '+v.amount+' ('+v.words+'), payable over a term of '+v.term+' months under the '+product+' program.');
+
+  // key-terms card
+  d.setFillColor(...C.lightGray); d.roundedRect(M, y, W-2*M, 96, 8, 8, 'F');
+  let by = y+24;
+  d.setFont('helvetica','bold'); d.setFontSize(9.5); d.setTextColor(...C.darkGray); d.text('KEY TERMS', M+16, by); by += 20;
+  const term = (k,val)=>{ d.setFont('helvetica','normal'); d.setFontSize(10.5); d.setTextColor(...C.darkGray); d.text(k, M+16, by);
+    d.setFont('helvetica','bold'); d.setTextColor(...C.navy); d.text(String(val), W-M-16, by, {align:'right'}); by += 18; };
+  term('Borrower', v.name); term('Principal', 'PHP '+v.amount); term('Term', v.term+' months'); term('Product', product);
+  y += 116;
+
+  d.setFont('helvetica','normal'); d.setFontSize(9.5); d.setTextColor(...C.darkGray);
+  para('Remaining clauses are populated from the template placeholders by the production service. This is a non-binding demonstration document.');
+  y += 16; d.setDrawColor(...C.medGray); d.line(M, y, M+220, y); y += 14;
   d.setFontSize(9); d.text('Borrower signature over printed name', M, y);
-  d.save('loan-document-demo.pdf');
+
+  B.footer(d);
+  d.save('NovaBank-loan-agreement-demo.pdf');
 }
 
 render();
