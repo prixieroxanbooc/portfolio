@@ -7,6 +7,15 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Inter:wght@400;500;600&family=Public+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
+<style>
+  .info-wrap{position:relative;display:inline-block}
+  .info-btn{width:17px;height:17px;border-radius:50%;border:none;background:var(--blue);color:#fff;font-size:11px;font-weight:700;cursor:pointer;line-height:17px;padding:0;margin-left:5px;font-style:normal;vertical-align:middle}
+  .popover{display:none;position:absolute;top:24px;left:0;z-index:40;width:280px;background:#fff;border:1px solid var(--border);border-radius:12px;box-shadow:var(--shadow);padding:14px 16px;font-size:12.5px;font-weight:400;color:var(--ink);text-transform:none;letter-spacing:normal;line-height:1.5}
+  .popover.show{display:block;animation:pop .12s ease}
+  .popover::before{content:"";position:absolute;top:-6px;left:14px;width:10px;height:10px;background:#fff;border-left:1px solid var(--border);border-top:1px solid var(--border);transform:rotate(45deg)}
+  @keyframes pop{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+  .note{font-size:12.5px;color:var(--muted);margin-top:10px}
+</style>
 </head>
 <body>
 
@@ -35,6 +44,50 @@
     <div class="card"><div class="ico" style="background:#eef7ef;color:#1e9e6a">📗</div><h3>Sheets</h3><p>Read ranges, append, batch-update, format.</p><div class="meta"><span class="chip">Sheets API</span></div></div>
     <div class="card"><div class="ico" style="background:#eaf0fb;color:#2451b8">📘</div><h3>Docs + Drive</h3><p>Create/edit docs, manage files & folders.</p><div class="meta"><span class="chip">61 tools</span></div></div>
     <div class="card"><div class="ico" style="background:#fbf3e6;color:#c9821b">📙</div><h3>Slides</h3><p>Build decks, add slides, replace text.</p><div class="meta"><span class="chip">32 tools</span></div></div>
+  </div>
+
+  <!-- Try with your Google email -->
+  <div class="panel panel-pad" style="margin-top:24px;border:1px solid var(--blue-soft);background:linear-gradient(180deg,#ffffff,#fbfdff)">
+    <h3 style="margin-bottom:6px">Try the Google MCP servers with your email</h3>
+    <p style="color:var(--muted);font-size:14px;margin:0 0 16px"><b>Your email is your key.</b> In the real system the gateway maps your email to your authorized Google credentials and the server acts as you. Enter any Google email below to generate a personalized sample. <span style="color:var(--blue);font-weight:600">No real Google data is accessed — demo only.</span></p>
+
+    <div class="row" style="gap:16px;align-items:flex-end">
+      <div class="col" style="min-width:240px">
+        <label class="fld">Your Google email (used as your API key)
+          <span class="info-wrap">
+            <button class="info-btn" onclick="togglePop(event)" aria-label="How this works">i</button>
+            <span class="popover" id="pop" onclick="event.stopPropagation()">
+              <b>How to use this demo</b>
+              <ol style="margin:8px 0 0;padding-left:18px">
+                <li>Type your Google email — it acts as your <span class="mono">x-api-key</span> identity.</li>
+                <li>Pick a service (Gmail, Docs, Sheets, Slides).</li>
+                <li>Click <b>Run sample</b> to see a personalized result.</li>
+                <li>Click <b>Email me</b> to receive the sample in your inbox.</li>
+              </ol>
+              <div style="margin-top:8px;color:var(--muted)">This is a simulation — no real Google account is connected and nothing is stored.</div>
+            </span>
+          </span>
+        </label>
+        <input type="email" id="gmail" placeholder="you@gmail.com" oninput="resetG()">
+      </div>
+      <div class="col" style="min-width:210px;flex:0 0 auto">
+        <label class="fld">Service</label>
+        <select id="svc" onchange="resetG()">
+          <option value="gmail">Gmail — search inbox</option>
+          <option value="docs">Docs — create a document</option>
+          <option value="sheets">Sheets — append a row</option>
+          <option value="slides">Slides — build a deck</option>
+        </select>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap">
+      <button class="btn btn-primary" onclick="runG()">Run sample →</button>
+      <button class="btn btn-ghost" onclick="emailG()">✉ Email me this sample</button>
+      <button class="btn btn-ghost" onclick="dlG()">⬇ Download (.json)</button>
+    </div>
+    <div class="codeblock" id="gout" style="margin-top:16px;display:none"></div>
+    <div class="note" id="gnote" style="display:none"></div>
   </div>
 
   <div class="row" style="margin-top:24px">
@@ -82,6 +135,78 @@
 <footer><div class="wrap"><div>Demo · simulated, no real accounts.</div><div><a href="https://larouxantech.com/">← Portfolio</a></div></div></footer>
 
 <script>
+// ---------- Try the Google MCP servers with your email ----------
+function togglePop(e){ e.stopPropagation(); document.getElementById('pop').classList.toggle('show'); }
+document.addEventListener('click', ()=>{ const p=document.getElementById('pop'); if(p) p.classList.remove('show'); });
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function validEmail(s){ return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(s); }
+function svcLabel(){ return document.getElementById('svc').selectedOptions[0].text; }
+
+function sampleFor(email, svc){
+  const who = email || 'you@gmail.com';
+  const handle = who.split('@')[0];
+  if(svc==='gmail') return { tool:'gmail.search_messages', identity:who, query:'is:unread',
+    matches:3, messages:[
+      {from:'billing@vendor.example', subject:'Your March statement is ready'},
+      {from:'team@novabank.example',  subject:'Welcome to NovaBank, '+handle+'!'},
+      {from:'calendar@workspace.example', subject:'Reminder: product demo at 3:00 PM'} ] };
+  if(svc==='docs') return { tool:'docs.create_document', identity:who, ok:true,
+    documentId:'1Demo'+handle.slice(0,4)+'XYZ', title:handle+' — Meeting Notes (demo)',
+    url:'https://docs.google.com/document/d/1Demo'+handle.slice(0,4)+'XYZ/edit' };
+  if(svc==='sheets') return { tool:'sheets.append_row', identity:who, ok:true,
+    spreadsheet:handle+'-recon-demo', updatedRange:'Sheet1!A42:D42', appended:1,
+    values:[[new Date().toISOString().slice(0,10), 'NovaBank', 'SETTLED', 1850.00]] };
+  return { tool:'slides.create_presentation', identity:who, ok:true,
+    presentationId:'1Deck'+handle.slice(0,4), title:handle+' — Quarterly Review (demo)', slides:5,
+    url:'https://docs.google.com/presentation/d/1Deck'+handle.slice(0,4)+'/edit' };
+}
+
+let lastSample = null;
+function resetG(){
+  document.getElementById('gout').style.display='none';
+  document.getElementById('gnote').style.display='none';
+  lastSample = null;
+}
+function runG(){
+  const email=document.getElementById('gmail').value.trim();
+  const svc=document.getElementById('svc').value;
+  const out=document.getElementById('gout');
+  if(!validEmail(email)){ out.style.display='block'; out.innerHTML='<span class="c">// enter a valid Google email above — it acts as your key</span>'; return; }
+  lastSample = sampleFor(email, svc);
+  out.style.display='block';
+  out.innerHTML = `<span class="c">// identity resolved → ${esc(email)}  ·  ${esc(svcLabel())}</span>\n` +
+    esc(JSON.stringify(lastSample, null, 2));
+  document.getElementById('gnote').style.display='none';
+}
+function emailG(){
+  const email=document.getElementById('gmail').value.trim();
+  if(!validEmail(email)){ alert('Enter your Google email first — it acts as your key.'); return; }
+  if(!lastSample) runG();
+  const svc=document.getElementById('svc').value;
+  const subject = 'Your NovaBank MCP demo sample — '+svc;
+  const body =
+`Hi ${email},
+
+Here is your demo sample from the ${svcLabel()} MCP server.
+This is a simulation for a portfolio demo — no real Google data was accessed.
+
+${JSON.stringify(lastSample, null, 2)}
+
+— Generated by the MCP Chat Client demo`;
+  window.location.href = 'mailto:'+encodeURIComponent(email)+'?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body);
+  const n=document.getElementById('gnote'); n.style.display='block';
+  n.innerHTML='✉ Opening your email app addressed to <b>'+esc(email)+'</b> — review and hit send to receive your sample. (In production this is sent automatically via the Gmail tool.)';
+}
+function dlG(){
+  const email=document.getElementById('gmail').value.trim();
+  if(!validEmail(email)){ alert('Enter your Google email first.'); return; }
+  if(!lastSample) runG();
+  const blob=new Blob([JSON.stringify({note:'DEMO — simulated MCP result, sample data only', sample:lastSample},null,2)],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download='mcp-sample-'+document.getElementById('svc').value+'-demo.json'; document.body.appendChild(a); a.click();
+  setTimeout(()=>{URL.revokeObjectURL(a.href); a.remove();},1500);
+}
+
 function reset(){ document.getElementById('out').innerHTML='// response appears here'; }
 function callTool(){
   const t=document.getElementById('tool').value;
