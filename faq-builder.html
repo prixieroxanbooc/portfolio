@@ -210,6 +210,22 @@ function validTxn(code){
   return chars[sum%36] === m[2];
 }
 function isLicensed(){ try { return validTxn(localStorage.getItem(LICENSE_KEY)||''); } catch(e){ return false; } }
+// Set to your Apps Script /exec URL to verify transaction numbers against the Google Sheet.
+// Leave blank to fall back to local checksum-only validation.
+const SHEET_VERIFY_URL = '';
+function verifyTxnServer(code){
+  return new Promise(resolve=>{
+    if(!SHEET_VERIFY_URL){ resolve(validTxn(code)); return; }   // no backend yet → checksum only
+    const cb='cb_'+Math.floor(Math.random()*1e9);
+    const s=document.createElement('script'); let done=false;
+    function cleanup(){ try{ delete window[cb]; }catch(e){ window[cb]=undefined; } if(s.parentNode) s.remove(); }
+    window[cb]=(res)=>{ if(done) return; done=true; resolve(!!(res&&res.valid)); cleanup(); };
+    s.onerror=()=>{ if(done) return; done=true; resolve(false); cleanup(); };
+    setTimeout(()=>{ if(done) return; done=true; resolve(false); cleanup(); }, 8000);
+    s.src=SHEET_VERIFY_URL+(SHEET_VERIFY_URL.indexOf('?')>-1?'&':'?')+'txn='+encodeURIComponent(code)+'&callback='+cb;
+    document.body.appendChild(s);
+  });
+}
 function buildEmbed(cfg){
   return '<!-- Floating FAQ chatbot — paste just before </body> -->\n<script>\n  window.NovaFAQ = ' +
     JSON.stringify(slimConfig(cfg), null, 2) + ';\n<\/script>\n<script src="' + WIDGET_URL + '" defer><\/script>';
@@ -224,11 +240,14 @@ function applyLicense(){
   document.getElementById('txnmsg').innerHTML='<span style="color:var(--success)">✓ Unlocked with '+code+'</span>';
   refreshEmbed();
 }
-function unlockTxn(){
+async function unlockTxn(){
   const code=(document.getElementById('txninput').value||'').trim().toUpperCase();
   const msg=document.getElementById('txnmsg');
-  if(validTxn(code)){ try{ localStorage.setItem(LICENSE_KEY, code); }catch(e){} applyLicense(); }
-  else { msg.innerHTML='<span style="color:var(--danger)">Invalid transaction number. You get one after purchasing via the Telegram bot.</span>'; }
+  if(!validTxn(code)){ msg.innerHTML='<span style="color:var(--danger)">Invalid format — use the TXN-… number the Telegram bot gave you.</span>'; return; }
+  msg.innerHTML='Verifying…';
+  const ok = await verifyTxnServer(code);
+  if(ok){ try{ localStorage.setItem(LICENSE_KEY, code); }catch(e){} applyLicense(); }
+  else { msg.innerHTML='<span style="color:var(--danger)">Transaction number not found. You get one after purchasing via the Telegram bot.</span>'; }
 }
 function copyEmbed(){
   navigator.clipboard.writeText(document.getElementById('embedout').textContent).then(()=>{
