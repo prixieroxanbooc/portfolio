@@ -73,16 +73,24 @@
       <div class="panel panel-pad">
         <h3 style="margin-bottom:8px">3 · Get your embed code 🔒</h3>
         <p style="color:var(--muted);font-size:13px;margin:0 0 14px">The live preview is free to try. The ready-to-paste embed snippet is a paid feature — scan the QR to pay, then send me your receipt and I'll deliver your code with setup help.</p>
-        <div style="text-align:center;margin:6px 0 2px">
-          <a id="qrlink" href="#" target="_blank" rel="noopener" title="Pay with Wise">
-            <img id="qr" alt="Wise payment QR"
-                 style="width:220px;height:220px;object-fit:contain;border:1px solid var(--border);border-radius:14px;background:#fff;padding:10px;display:inline-block">
-          </a>
-          <div style="font-weight:600;margin-top:10px">Scan to pay with Wise · Prixie Roxan</div>
-          <div style="font-size:12.5px;color:var(--muted)">Or click the QR / button to open the payment link.</div>
-          <a id="paybtn" class="btn btn-primary btn-sm" style="margin-top:12px" href="#" target="_blank" rel="noopener">💳 Pay with Wise →</a>
-          <div style="font-size:12px;color:var(--muted);margin-top:8px">After paying, <a href="https://calendly.com/prixieroxanbooc/30min" target="_blank" rel="noopener">message me</a> with your receipt to receive the snippet.</div>
+        <div style="text-align:center;font-weight:600;margin:4px 0 2px">Scan to pay · Prixie Roxan</div>
+        <div style="display:flex;gap:18px;justify-content:center;flex-wrap:wrap;margin:10px 0 2px">
+          <div style="text-align:center">
+            <img id="wiseqr" src="wise-qr.png" alt="Wise QR"
+                 style="width:180px;height:180px;object-fit:contain;border:1px solid var(--border);border-radius:14px;background:#fff;padding:8px"
+                 onerror="this.style.display='none';document.getElementById('wiseph').style.display='grid'">
+            <div id="wiseph" style="display:none;width:180px;height:180px;border:2px dashed var(--border);border-radius:14px;place-items:center;color:var(--muted);font-size:11.5px;text-align:center;padding:12px">Add<br><span class="mono">wise-qr.png</span></div>
+            <div style="font-weight:600;margin-top:6px;font-size:13px">🟢 Wise</div>
+          </div>
+          <div style="text-align:center">
+            <img id="ppqr" src="paypal-qr.png" alt="PayPal QR"
+                 style="width:180px;height:180px;object-fit:contain;border:1px solid var(--border);border-radius:14px;background:#fff;padding:8px"
+                 onerror="this.style.display='none';document.getElementById('ppph').style.display='grid'">
+            <div id="ppph" style="display:none;width:180px;height:180px;border:2px dashed var(--border);border-radius:14px;place-items:center;color:var(--muted);font-size:11.5px;text-align:center;padding:12px">Add<br><span class="mono">paypal-qr.png</span></div>
+            <div style="font-weight:600;margin-top:6px;font-size:13px">🔵 PayPal</div>
+          </div>
         </div>
+        <div style="font-size:12px;color:var(--muted);margin-top:10px;text-align:center">After paying, <a href="https://calendly.com/prixieroxanbooc/30min" target="_blank" rel="noopener">message me</a> with your receipt to receive the snippet.</div>
         <div style="position:relative;margin-top:16px">
           <div class="codeblock" style="filter:blur(5px);user-select:none;pointer-events:none;max-height:140px;overflow:hidden">&lt;script&gt;
   window.NovaFAQ = { brand: "…", logo: "…", categories: [ … ] };
@@ -109,19 +117,7 @@
 
 <script>
 const WIDGET_URL = 'https://prixieroxanbooc.github.io/portfolio/faq-widget.js';
-
-// ▼▼▼ PAYWALL — paste YOUR Wise payment link here (the only line you edit) ▼▼▼
-const PAYMENT_LINK = 'https://wise.com/pay/me/REPLACE-ME';
-// ▲▲▲ get yours in the Wise app: Recipients/Request → "Get your wise.com/pay link" ▲▲▲
-(function setupPay(){
-  const enc = encodeURIComponent(PAYMENT_LINK);
-  const qr = document.getElementById('qr');
-  qr.src = 'https://api.qrserver.com/v1/create-qr-code/?size=240x240&margin=10&data=' + enc;
-  qr.onerror = function(){ qr.replaceWith(Object.assign(document.createElement('div'),{textContent:'Open: '+PAYMENT_LINK, style:'word-break:break-all;color:#4A5568;font-size:12px'})); };
-  document.getElementById('qrlink').href = PAYMENT_LINK;
-  document.getElementById('paybtn').href = PAYMENT_LINK;
-})();
-
+// Paywall uses two QR image files in this repo: wise-qr.png and paypal-qr.png
 let logoDataUrl = null;
 
 // ---- format <-> config ----
