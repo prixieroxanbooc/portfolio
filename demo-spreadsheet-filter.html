@@ -7,6 +7,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Public+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 <body>
 
@@ -54,10 +56,12 @@
           <option>03272025_transactions_export.xlsx</option>
         </select>
 
-        <div style="display:flex;gap:10px;margin-top:22px">
-          <button class="btn btn-ghost" onclick="preview()">Preview count</button>
-          <button class="btn btn-primary" onclick="generate()">Generate report →</button>
+        <div style="display:flex;gap:10px;margin-top:22px;flex-wrap:wrap">
+          <button class="btn btn-ghost" onclick="genDataset()">1 · Generate sample dataset</button>
+          <button class="btn btn-ghost" onclick="preview()">2 · Preview SETTLED</button>
+          <button class="btn btn-primary" onclick="generate()">3 · Generate report →</button>
         </div>
+        <p style="color:var(--muted);font-size:12px;margin-top:10px">Builds fabricated transaction rows in your browser, filters them, and produces downloadable files — no real or internal data is used.</p>
 
         <div id="previewbox" style="margin-top:20px;display:none">
           <div class="kpi-grid">
@@ -83,14 +87,20 @@
     <div class="col">
       <div class="panel panel-pad">
         <h3 style="margin-bottom:10px">Result</h3>
-        <div id="result" style="color:var(--muted);font-size:14px">Run a preview or generate to see output here.</div>
+        <div id="result" style="color:var(--muted);font-size:14px">Run the steps on the left to generate downloadable output here.</div>
         <div id="resultcard" style="display:none;margin-top:14px">
           <div class="badge-live">Generated</div>
           <table style="margin-top:12px">
-            <tr><td>Billing Report</td><td class="mono"><a href="#" onclick="return false">03_March/03262025/Billing_Report</a></td></tr>
-            <tr><td>Invoice PDF</td><td class="mono"><a href="#" onclick="return false">03_March/03262025/Invoice.pdf</a></td></tr>
+            <tr><td>Rows scanned</td><td class="mono" id="r-scanned">—</td></tr>
+            <tr><td>SETTLED matched</td><td class="mono" id="r-settled">—</td></tr>
+            <tr><td>Total fee</td><td class="mono" id="r-fee">—</td></tr>
             <tr><td>Validation</td><td><span style="color:var(--success);font-weight:600">✓ 0 formula errors</span></td></tr>
           </table>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:16px">
+            <button class="btn btn-ghost btn-sm" onclick="dlFiltered()">⬇ Filtered rows (.xlsx)</button>
+            <button class="btn btn-ghost btn-sm" onclick="dlReport()">⬇ Billing report (.xlsx)</button>
+            <button class="btn btn-ghost btn-sm" onclick="dlInvoice()">⬇ Invoice (.pdf)</button>
+          </div>
         </div>
       </div>
 
@@ -116,34 +126,121 @@
 <footer><div class="wrap"><div>Demo · sample data only.</div><div><a href="index.html">← Portfolio</a></div></div></footer>
 
 <script>
-// fabricated, deterministic sample data per file+direction
-const DATA = {
-  '03152025_transactions_export.xlsx': { in:{scanned:41280, settled:58}, out:{scanned:41280, settled:44} },
-  '03262025_transactions_export.xlsx': { in:{scanned:52910, settled:62}, out:{scanned:52910, settled:50} },
-  '03272025_transactions_export.xlsx': { in:{scanned:48715, settled:50}, out:{scanned:48715, settled:39} },
-};
 const peso = n => '₱' + n.toLocaleString('en-PH', {minimumFractionDigits:2, maximumFractionDigits:2});
-function calc(){
-  const f = document.getElementById('file').value;
+const MERCHANT = 'MID-86DA22DC';                 // fabricated merchant code
+const STATUSES = ['SETTLED','PENDING','FAILED','REVERSED'];
+// seeded PRNG so the same file name reproduces the same dataset
+function rng(seed){ let s=seed>>>0; return ()=>{ s=(s*1664525+1013904223)>>>0; return s/4294967296; }; }
+function seedFor(name){ let h=2166136261; for(const c of name){ h^=c.charCodeAt(0); h=Math.imul(h,16777619);} return h>>>0; }
+
+let DATASET = [];      // generated rows
+let SCANNED = 0;
+
+// build ~6,000 fabricated transaction rows (demo subset; production handles 290k+)
+function genDataset(){
+  const name = document.getElementById('file').value;
+  const r = rng(seedFor(name));
+  const N = 6000 + Math.floor(r()*1500);
+  const rows = [];
+  for(let i=0;i<N;i++){
+    const isOurs = r() < 0.13;                                  // ~13% our merchant
+    const st = STATUSES[Math.floor(r()*STATUSES.length)];
+    const amt = Math.round((200 + r()*9800)*100)/100;
+    rows.push({
+      'Txn Code': isOurs ? MERCHANT : 'MID-' + Math.floor(r()*1e6).toString(16).toUpperCase(),
+      'Reference': 'TXN' + (100000+i),
+      'Date': '2025-03-' + String(1+Math.floor(r()*27)).padStart(2,'0'),
+      'Amount': amt,
+      'Status': st,
+    });
+  }
+  DATASET = rows; SCANNED = rows.length;
+  document.getElementById('previewbox').style.display='block';
+  document.getElementById('pv-scanned').textContent = SCANNED.toLocaleString();
+  document.getElementById('pv-settled').textContent = '—';
+  document.getElementById('pv-fee').textContent = '—';
+  document.getElementById('result').textContent = 'Generated ' + SCANNED.toLocaleString() + ' sample rows. Now preview the SETTLED count.';
+  document.getElementById('resultcard').style.display='none';
+}
+
+function filtered(){
+  return DATASET.filter(x => x['Txn Code']===MERCHANT && x['Status']==='SETTLED');
+}
+function feeFor(rows){
   const dir = document.getElementById('dir').value;
-  const d = DATA[f][dir];
-  // sample fee: incoming ~ avg ₱1,850 * 0.7% capped at ₱1 min; outgoing flat 3.5
-  let fee;
-  if(dir==='in'){ fee = d.settled * Math.max(1850*0.007, 1); }
-  else { fee = d.settled * 3.5; }
-  return {...d, fee};
+  if(dir==='in') return rows.reduce((s,x)=> s + Math.max(x['Amount']*0.007, 1), 0);  // QRPH 0.7% / ₱1 min
+  return rows.length * 3.5;                                                            // disburse flat ₱3.50
 }
 function preview(){
-  const r = calc();
+  if(!DATASET.length) genDataset();
+  const f = filtered();
   document.getElementById('previewbox').style.display='block';
-  document.getElementById('pv-scanned').textContent = r.scanned.toLocaleString();
-  document.getElementById('pv-settled').textContent = r.settled;
-  document.getElementById('pv-fee').textContent = peso(r.fee);
+  document.getElementById('pv-scanned').textContent = SCANNED.toLocaleString();
+  document.getElementById('pv-settled').textContent = f.length.toLocaleString();
+  document.getElementById('pv-fee').textContent = peso(feeFor(f));
 }
 function generate(){
+  if(!DATASET.length) genDataset();
+  const f = filtered(), fee = feeFor(f);
   preview();
   document.getElementById('result').style.display='none';
   document.getElementById('resultcard').style.display='block';
+  document.getElementById('r-scanned').textContent = SCANNED.toLocaleString();
+  document.getElementById('r-settled').textContent = f.length.toLocaleString();
+  document.getElementById('r-fee').textContent = peso(fee);
+}
+
+// ---- downloads (all client-side) ----
+function dlFiltered(){
+  const f = filtered();
+  if(!f.length){ alert('Run step 3 first.'); return; }
+  const ws = XLSX.utils.json_to_sheet(f);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'SETTLED');
+  XLSX.writeFile(wb, 'filtered-settled-demo.xlsx');
+}
+function dlReport(){
+  const f = filtered(); if(!f.length){ alert('Run step 3 first.'); return; }
+  const dir = document.getElementById('dir').value;
+  const total = f.reduce((s,x)=>s+x['Amount'],0);
+  const fee = feeFor(f);
+  const summary = [
+    ['BILLING REPORT — DEMO (sample data only)'],
+    ['Period', document.getElementById('month').value],
+    ['Direction', dir==='in'?'Incoming (QRPH)':'Outgoing (Disburse)'],
+    ['Merchant code', MERCHANT],
+    [],
+    ['Rows scanned', SCANNED],
+    ['SETTLED matched', f.length],
+    ['Gross amount', total],
+    ['Fee basis', dir==='in'?'max(amount × 0.7%, ₱1)':'flat ₱3.50 / txn'],
+    ['Total fee', fee],
+  ];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(summary), 'SUMMARY');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(f), 'DETAIL');
+  XLSX.writeFile(wb, 'billing-report-demo.xlsx');
+}
+function dlInvoice(){
+  const f = filtered(); if(!f.length){ alert('Run step 3 first.'); return; }
+  if(!window.jspdf){ alert('PDF library still loading.'); return; }
+  const dir = document.getElementById('dir').value;
+  const fee = feeFor(f);
+  const { jsPDF } = window.jspdf;
+  const d = new jsPDF({unit:'pt', format:'a4'}); const M=56; let y=70;
+  d.setFont('helvetica','bold'); d.setFontSize(18); d.text('INVOICE', M, y); y+=10;
+  d.setFontSize(9); d.setFont('helvetica','italic'); d.setTextColor(140);
+  d.text('DEMO — sample data only', M, y+8); y+=34;
+  d.setTextColor(20); d.setFont('helvetica','normal'); d.setFontSize(11);
+  const line=(k,v)=>{ d.text(k,M,y); d.text(String(v),539,y,{align:'right'}); y+=20; };
+  line('Period', document.getElementById('month').value);
+  line('Direction', dir==='in'?'Incoming (QRPH)':'Outgoing (Disburse)');
+  line('Merchant code', MERCHANT);
+  line('SETTLED transactions', f.length.toLocaleString());
+  y+=6; d.setDrawColor(210); d.line(M,y,539,y); y+=24;
+  d.setFont('helvetica','bold'); d.setFontSize(13);
+  d.text('AMOUNT DUE', M, y); d.text(peso(fee), 539, y, {align:'right'});
+  d.save('invoice-demo.pdf');
 }
 </script>
 </body>

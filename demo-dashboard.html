@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Public+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 <body>
 
@@ -28,6 +29,11 @@
 </header>
 
 <main class="wrap" style="padding-bottom:40px">
+
+  <div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+    <button class="btn btn-ghost btn-sm" onclick="exportCsv()">⬇ Export KPIs (.csv)</button>
+    <button class="btn btn-primary btn-sm" onclick="exportPdf()">⬇ Download report (.pdf)</button>
+  </div>
 
   <!-- KPIs -->
   <div class="kpi-grid">
@@ -123,6 +129,43 @@ const recent=[
 ];
 document.getElementById('recent').innerHTML = recent.map(r=>
   `<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td style="color:var(--muted)">${r[3]}</td></tr>`).join('');
+
+// ---- sample report data + exports (client-side) ----
+const KPIS = [
+  ['Total accounts',107],['Active (7d)',71],['Admins',14],['Standard users',93],
+  ['Dormant (30d)',9],['Pending invites',5],
+];
+const DEPTS = [
+  ['AI / Automation',4,4],['Operations',28,21],['Finance',19,14],
+  ['Credit & Risk',22,15],['Branch network',26,12],['Unassigned',8,0],
+];
+function exportCsv(){
+  let csv = 'AI USAGE ANALYTICS — DEMO (sample data only)\n\nKPI,Value\n';
+  KPIS.forEach(k=> csv += `${k[0]},${k[1]}\n`);
+  csv += '\nDepartment,Members,Active\n';
+  DEPTS.forEach(d=> csv += `${d[0]},${d[1]},${d[2]}\n`);
+  const blob = new Blob([csv], {type:'text/csv'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download='ai-usage-kpis-demo.csv'; document.body.appendChild(a); a.click();
+  setTimeout(()=>{URL.revokeObjectURL(a.href); a.remove();},1500);
+}
+function exportPdf(){
+  if(!window.jspdf){ alert('PDF library still loading.'); return; }
+  const { jsPDF } = window.jspdf;
+  const d = new jsPDF({unit:'pt', format:'a4'}); const M=56; let y=64;
+  d.setFont('helvetica','bold'); d.setFontSize(17); d.text('AI Usage Analytics — Report', M, y); y+=8;
+  d.setFontSize(9); d.setFont('helvetica','italic'); d.setTextColor(140);
+  d.text('DEMO — sample data only', M, y+8); y+=34;
+  d.setTextColor(20); d.setFont('helvetica','bold'); d.setFontSize(12); d.text('Key metrics', M, y); y+=20;
+  d.setFont('helvetica','normal'); d.setFontSize(11);
+  KPIS.forEach(k=>{ d.text(k[0],M,y); d.text(String(k[1]),300,y,{align:'right'}); y+=18; });
+  y+=14; d.setFont('helvetica','bold'); d.setFontSize(12); d.text('By department',M,y); y+=20;
+  d.setFont('helvetica','normal'); d.setFontSize(11);
+  d.text('Team',M,y); d.text('Members',360,y,{align:'right'}); d.text('Active',460,y,{align:'right'}); y+=16;
+  d.setDrawColor(220); d.line(M,y-6,460,y-6);
+  DEPTS.forEach(t=>{ d.text(t[0],M,y); d.text(String(t[1]),360,y,{align:'right'}); d.text(String(t[2]),460,y,{align:'right'}); y+=16; });
+  d.save('ai-usage-report-demo.pdf');
+}
 </script>
 </body>
 </html>

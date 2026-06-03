@@ -7,6 +7,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Public+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
+<script src="https://unpkg.com/docx@8.5.0/build/index.umd.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 <body>
 
@@ -51,9 +53,12 @@
         <label class="fld">Term (months)</label>
         <input type="number" id="term" value="36" oninput="render()">
 
-        <div style="margin-top:20px">
+        <div style="margin-top:20px;display:flex;gap:10px;flex-wrap:wrap">
           <button class="btn btn-primary" onclick="render()">Build request →</button>
+          <button class="btn btn-ghost" onclick="downloadDocx()">⬇ Download .docx</button>
+          <button class="btn btn-ghost" onclick="downloadPdf()">⬇ Download .pdf</button>
         </div>
+        <p style="color:var(--muted);font-size:12px;margin-top:10px">Generates a real document in your browser from the form values — sample data only.</p>
       </div>
     </div>
 
@@ -118,6 +123,65 @@ function tab(n){
   document.getElementById('pane1').style.display=n===1?'block':'none';
   document.getElementById('pane2').style.display=n===2?'block':'none';
 }
+
+function vals(){
+  return {
+    bundle: document.getElementById('bundle').value,
+    name: document.getElementById('name').value,
+    amount: document.getElementById('amount').value,
+    words: document.getElementById('words').value,
+    term: document.getElementById('term').value,
+  };
+}
+function saveBlob(blob, filename){
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename; document.body.appendChild(a); a.click();
+  setTimeout(()=>{ URL.revokeObjectURL(url); a.remove(); }, 1500);
+}
+
+function downloadDocx(){
+  const v = vals();
+  if(!window.docx){ alert('Document library still loading — try again in a second.'); return; }
+  const { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType } = window.docx;
+  const title = (v.bundle==='vehicle'?'VEHICLE':'PARTNER') + ' LOAN AGREEMENT';
+  const p = (children, opts={}) => new Paragraph({ spacing:{after:200}, ...opts, children });
+  const r = (t, o={}) => new TextRun({ text:t, ...o });
+  const doc = new Document({ sections:[{ children:[
+    p([r(title,{bold:true,size:30})], {alignment:AlignmentType.CENTER, heading:HeadingLevel.HEADING_1}),
+    p([r('DEMO DOCUMENT — sample data only. Not a real agreement.',{italics:true,color:'888888',size:18})], {alignment:AlignmentType.CENTER}),
+    p([r('This Agreement is entered into by and between the Lender and ',{}), r(v.name,{bold:true}), r(' (the "Borrower").')]),
+    p([r('The Borrower acknowledges a loan in the principal amount of '), r('₱'+v.amount,{bold:true}), r(' ('), r(v.words,{italics:true}), r('), payable over a term of '), r(v.term+' months',{bold:true}), r('.')]),
+    p([r('Bundle: '+(v.bundle==='vehicle'?'Vehicle loan (24 fields)':'Ride-hailing partner loan (30 fields)'))]),
+    p([r('Remaining clauses are populated from the template’s {{placeholders}} by the production service.',{color:'888888'})]),
+    p([r('_______________________________',{})]),
+    p([r('Borrower signature over printed name')]),
+  ]}]});
+  Packer.toBlob(doc).then(b => saveBlob(b, 'loan-document-demo.docx'));
+}
+
+function downloadPdf(){
+  const v = vals();
+  if(!window.jspdf){ alert('PDF library still loading — try again in a second.'); return; }
+  const { jsPDF } = window.jspdf;
+  const d = new jsPDF({unit:'pt', format:'a4'});
+  const M=56; let y=70;
+  d.setFont('helvetica','bold'); d.setFontSize(16);
+  d.text((v.bundle==='vehicle'?'VEHICLE':'PARTNER')+' LOAN AGREEMENT', 297, y, {align:'center'}); y+=22;
+  d.setFont('helvetica','italic'); d.setFontSize(9); d.setTextColor(140);
+  d.text('DEMO DOCUMENT — sample data only. Not a real agreement.', 297, y, {align:'center'}); y+=30;
+  d.setTextColor(20); d.setFont('helvetica','normal'); d.setFontSize(11);
+  const wrap = t => d.splitTextToSize(t, 595-M*2);
+  const para = t => { wrap(t).forEach(line=>{ d.text(line, M, y); y+=16; }); y+=8; };
+  para('This Agreement is entered into by and between the Lender and '+v.name+' (the "Borrower").');
+  para('The Borrower acknowledges a loan in the principal amount of ₱'+v.amount+' ('+v.words+'), payable over a term of '+v.term+' months.');
+  para('Bundle: '+(v.bundle==='vehicle'?'Vehicle loan (24 fields)':'Ride-hailing partner loan (30 fields)'));
+  d.setTextColor(140); para('Remaining clauses are populated from the template placeholders by the production service.');
+  y+=30; d.setTextColor(20); d.text('_______________________________', M, y); y+=16;
+  d.setFontSize(9); d.text('Borrower signature over printed name', M, y);
+  d.save('loan-document-demo.pdf');
+}
+
 render();
 </script>
 </body>

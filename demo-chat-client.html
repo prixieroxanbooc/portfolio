@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Demo · MCP Chat Client</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Public+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+<style>
+  .chat { display:flex; flex-direction:column; height:540px; }
+  .stream { flex:1; overflow-y:auto; padding:18px; display:flex; flex-direction:column; gap:14px; }
+  .msg { max-width:80%; padding:11px 15px; border-radius:14px; font-size:14.5px; line-height:1.5; }
+  .msg.user { align-self:flex-end; background:var(--blue); color:#fff; border-bottom-right-radius:4px; }
+  .msg.bot  { align-self:flex-start; background:var(--blue-soft); color:var(--ink); border-bottom-left-radius:4px; }
+  .toolcall { align-self:flex-start; font-family:var(--font-mono); font-size:12px; background:#0f1729; color:#9be7a0; padding:8px 12px; border-radius:10px; max-width:80%; }
+  .toolcall .tn { color:#7fc0ff; }
+  .composer { display:flex; gap:10px; border-top:1px solid var(--border); padding:14px; }
+  .composer input { flex:1; }
+  .quick { display:flex; gap:8px; flex-wrap:wrap; padding:0 14px 14px; }
+  .quick button { font-size:12.5px; }
+  .typing span { display:inline-block; width:6px; height:6px; margin:0 1px; background:var(--muted); border-radius:50%; animation:b 1s infinite; }
+  .typing span:nth-child(2){animation-delay:.15s} .typing span:nth-child(3){animation-delay:.3s}
+  @keyframes b{0%,60%,100%{opacity:.3;transform:translateY(0)}30%{opacity:1;transform:translateY(-3px)}}
+</style>
+</head>
+<body>
+
+<div class="demo-banner">Interactive demo — simulated assistant & tool calls, no real model or accounts. <a href="index.html">← Back to portfolio</a></div>
+
+<nav class="nav">
+  <div class="wrap">
+    <div class="brand"><span class="mark">PR</span> Prixie&nbsp;Roxan</div>
+    <div class="nav-links"><a href="index.html">Portfolio</a><a href="demo-mcp.html">MCP fleet</a><a href="demo-dashboard.html">Dashboard demo</a></div>
+  </div>
+</nav>
+
+<header class="demo-head">
+  <div class="wrap">
+    <div class="tag">AI integration · chat client</div>
+    <h1>MCP Chat Client</h1>
+    <p>A lightweight chat client (FastAPI + an LLM) that connects to Model Context Protocol servers over streamable HTTP / JSON-RPC, so the assistant can call real tools mid-conversation. This demo simulates that loop — type a request and watch it "call" a tool and answer. Everything is fabricated sample data.</p>
+  </div>
+</header>
+
+<main class="wrap" style="padding-bottom:40px">
+  <div class="row">
+    <div class="col" style="flex:1.4">
+      <div class="panel chat">
+        <div class="stream" id="stream"></div>
+        <div class="quick">
+          <button class="btn btn-ghost btn-sm" onclick="ask('Summarize my unread billing emails')">Summarize billing emails</button>
+          <button class="btn btn-ghost btn-sm" onclick="ask('Add a row to the reconciliation sheet')">Append to a sheet</button>
+          <button class="btn btn-ghost btn-sm" onclick="ask('Delete last month\\'s archive folder')">Try a destructive action</button>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;padding:0 14px 6px">
+          <input type="password" id="apikey" placeholder="Anthropic API key — optional, enables live LLM" style="flex:1;font-size:13px">
+          <span id="cap" class="mono" style="font-size:12px;color:var(--muted);white-space:nowrap">5 left</span>
+        </div>
+        <div style="padding:0 14px 10px;font-size:11.5px;color:var(--muted)">Bring your own key — used only in this tab (never stored/sent anywhere else), capped at 5 live messages. Leave blank for simulated replies.</div>
+        <div class="composer">
+          <input type="text" id="inp" placeholder="Ask the assistant…" onkeydown="if(event.key==='Enter')send()">
+          <button class="btn btn-primary" id="sendbtn" onclick="send()">Send</button>
+        </div>
+      </div>
+      <div style="margin-top:12px"><button class="btn btn-ghost btn-sm" onclick="dlChat()">⬇ Download chat transcript (.json)</button></div>
+    </div>
+
+    <div class="col">
+      <div class="panel panel-pad">
+        <h3 style="margin-bottom:10px">Connected MCP servers</h3>
+        <table>
+          <tr><td>Gmail</td><td><span class="badge-live">online</span></td></tr>
+          <tr><td>Sheets</td><td><span class="badge-live">online</span></td></tr>
+          <tr><td>Docs + Drive</td><td><span class="badge-live">online</span></td></tr>
+          <tr><td>Slides</td><td><span class="badge-live">online</span></td></tr>
+        </table>
+        <p style="color:var(--muted);font-size:13px;margin-top:14px">The client discovers each server's tools via <span class="mono">tools/list</span> and forwards calls with the user's identity. Destructive tools are blocked by the gateway's safe-defaults policy.</p>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer><div class="wrap"><div>Demo · simulated, no real model or accounts.</div><div><a href="index.html">← Portfolio</a></div></div></footer>
+
+<script>
+const stream = document.getElementById('stream');
+const history = [];          // full UI transcript (incl. tool chips)
+const llmMessages = [];      // role/content pairs sent to the LLM for context
+const MAX_LIVE = 5;          // demo cap on live LLM messages
+let liveCount = 0;
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function add(cls, html){
+  const el=document.createElement('div'); el.className=(cls==='tool'?'toolcall':'msg '+cls); el.innerHTML=html;
+  stream.appendChild(el); stream.scrollTop=stream.scrollHeight; return el;
+}
+function typing(){ return add('bot','<span class="typing"><span></span><span></span><span></span></span>'); }
+function updateCap(){
+  const left = Math.max(0, MAX_LIVE - liveCount);
+  document.getElementById('cap').textContent = left + ' left';
+  if(left===0) document.getElementById('cap').style.color = 'var(--danger)';
+}
+
+async function callLLM(q){
+  const key = document.getElementById('apikey').value.trim();
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method:'POST',
+    headers:{
+      'content-type':'application/json',
+      'x-api-key': key,
+      'anthropic-version':'2023-06-01',
+      'anthropic-dangerous-direct-browser-access':'true'
+    },
+    body: JSON.stringify({
+      model:'claude-haiku-4-5-20251001',
+      max_tokens:300,
+      system:'You are a friendly demo assistant on a developer portfolio site, role-playing as an AI connected to MCP tools (Gmail, Sheets, Docs, Slides). All data is fabricated sample data. Keep replies under 80 words. If asked to do something destructive (delete/remove/wipe), explain it is blocked by a safe-defaults policy and an admin must enable it per-profile.',
+      messages: llmMessages.concat([{role:'user', content:q}])
+    })
+  });
+  if(!res.ok){ const t=await res.text(); throw new Error('API '+res.status+' — '+t.slice(0,160)); }
+  const data = await res.json();
+  return (data.content||[]).map(b=>b.text||'').join('').trim() || '(empty response)';
+}
+
+// scripted, simulated responses
+function reply(text){
+  const t=text.toLowerCase();
+  if(t.includes('billing')||t.includes('email')||t.includes('unread'))
+    return { tool:`gmail.<span class="tn">search_messages</span>({ query: "is:unread subject:billing" }) → 3 matches`,
+             answer:'You have <b>3 unread billing emails</b>: a March statement from a vendor, a reconciliation summary from Ops, and a payment confirmation. Want me to draft replies?' };
+  if(t.includes('sheet')||t.includes('row')||t.includes('append')||t.includes('reconcil'))
+    return { tool:`sheets.<span class="tn">append_row</span>({ range: "Recon!A:D", values: [...] }) → ok`,
+             answer:'Done — appended 1 row to <b>Recon!A42:D42</b>. The sheet now has 41 reconciled entries for the period.' };
+  if(t.includes('delete')||t.includes('remove')||t.includes('archive')||t.includes('drop'))
+    return { tool:`drive.<span class="tn">delete_file</span>(...) → 🛡️ blocked`,
+             answer:'I can\\'t do that — <b>delete</b> is a destructive tool and it\\'s disabled by default by the gateway\\'s safe-defaults policy. An admin would need to enable it per-profile first.' };
+  return { tool:null, answer:'In the real client this would route through the LLM, which decides whether to call an MCP tool. This demo recognizes a few sample intents — try the quick buttons below.' };
+}
+
+function ask(q){ document.getElementById('inp').value=q; send(); }
+
+function simulated(q){
+  const r=reply(q); const dots=typing();
+  setTimeout(()=>{
+    dots.remove();
+    if(r.tool){ add('tool','→ '+r.tool); history.push({role:'tool',call:r.tool.replace(/<[^>]+>/g,'')}); }
+    setTimeout(()=>{ add('bot', r.answer); history.push({role:'assistant',content:r.answer.replace(/<[^>]+>/g,''),mode:'simulated'}); }, r.tool?500:0);
+  }, 650);
+}
+
+async function send(){
+  const inp=document.getElementById('inp'); const q=inp.value.trim(); if(!q) return;
+  add('user', esc(q)); history.push({role:'user',content:q}); inp.value='';
+  const key=document.getElementById('apikey').value.trim();
+  const useLive = key && liveCount < MAX_LIVE;
+  if(useLive){
+    const dots=typing(); document.getElementById('sendbtn').disabled=true;
+    try{
+      const ans=await callLLM(q);
+      liveCount++; updateCap();
+      dots.remove();
+      add('bot', esc(ans).replace(/\n/g,'<br>') + ' <span class="mono" style="font-size:10px;color:var(--muted)">· live</span>');
+      llmMessages.push({role:'user',content:q},{role:'assistant',content:ans});
+      history.push({role:'assistant',content:ans,mode:'live'});
+      if(liveCount>=MAX_LIVE) add('bot','<i>Live demo limit reached (5 messages). Further messages use simulated replies — refresh to reset.</i>');
+    }catch(e){
+      dots.remove();
+      add('bot','<span style="color:var(--danger)">Live call failed: '+esc(e.message)+'</span><br>Falling back to a simulated reply.');
+      simulated(q);
+    } finally { document.getElementById('sendbtn').disabled=false; }
+    return;
+  }
+  if(key && liveCount>=MAX_LIVE){ /* cap hit */ }
+  simulated(q);
+}
+function dlChat(){
+  const blob=new Blob([JSON.stringify({note:'DEMO chat transcript — simulated, sample data only', messages:history},null,2)],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='chat-transcript-demo.json';
+  document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},1500);
+}
+// greeting
+add('bot','Hi! I\\'m a demo assistant connected to MCP servers. Ask me to check email, update a sheet, or try a destructive action to see the safety policy. (All data here is fabricated.)');
+</script>
+</body>
+</html>

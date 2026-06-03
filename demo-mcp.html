@@ -69,7 +69,10 @@
           <option value="append">sheets.append_row</option>
           <option value="delete">drive.delete_file ⚠️ (destructive)</option>
         </select>
-        <button class="btn btn-primary" style="margin-top:16px" onclick="callTool()">Invoke →</button>
+        <div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap">
+          <button class="btn btn-primary" onclick="callTool()">Invoke →</button>
+          <button class="btn btn-ghost" onclick="dlTranscript()">⬇ Download transcript (.json)</button>
+        </div>
         <div class="codeblock" id="out" style="margin-top:16px">// response appears here</div>
       </div>
     </div>
@@ -104,6 +107,25 @@ function callTool(){
   <span class="k">"hint"</span>: <span class="s">"enable per-profile in admin panel"</span>
 }`;
   }
+}
+function dlTranscript(){
+  const t = document.getElementById('tool').value;
+  const transcript = {
+    note: 'DEMO transcript — simulated MCP tool calls, sample data only',
+    profile: 'demo-profile',
+    resolvedIdentity: 'user@example.com',
+    calls: [
+      { tool:'gmail.search_messages', args:{query:'subject:statement'}, ok:true, result:{matches:3} },
+      { tool:'sheets.append_row', args:{range:'Sheet1!A:D'}, ok:true, result:{updatedRange:'Sheet1!A42:D42'} },
+      { tool:'drive.delete_file', args:{fileId:'demo123'}, ok:false, blockedBy:'safe-defaults', reason:'destructive tool off by default' },
+    ],
+    invokedNow: t,
+    generatedBy: 'portfolio demo (client-side)'
+  };
+  const blob = new Blob([JSON.stringify(transcript,null,2)], {type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download='mcp-tool-transcript-demo.json'; document.body.appendChild(a); a.click();
+  setTimeout(()=>{URL.revokeObjectURL(a.href); a.remove();},1500);
 }
 </script>
 </body>
