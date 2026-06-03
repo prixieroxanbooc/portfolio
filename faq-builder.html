@@ -71,7 +71,33 @@
     <!-- RIGHT: embed code -->
     <div class="col">
       <div class="panel panel-pad">
-        <h3 style="margin-bottom:8px">3 · Get your embed code 🔒</h3>
+        <h3 style="margin-bottom:8px">3 · Get your embed code</h3>
+
+        <!-- license unlock -->
+        <div style="background:#eaf6ec;border:1px solid #cfe9d4;border-radius:10px;padding:12px;margin-bottom:14px">
+          <div style="font-weight:600;font-size:13px;margin-bottom:6px">🔓 Already purchased? Unlock unlimited</div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:8px">Enter the <b>transaction number</b> the Telegram bot gave you after approval to unlock the embed code + unlimited customizing &amp; downloads on this device.</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <input type="text" id="txninput" placeholder="TXN-XXXXXXXX-X" style="flex:1;min-width:160px;text-transform:uppercase">
+            <button class="btn btn-primary btn-sm" onclick="unlockTxn()">Unlock</button>
+          </div>
+          <div id="txnmsg" style="font-size:12.5px;margin-top:8px"></div>
+        </div>
+
+        <!-- UNLOCKED view -->
+        <div id="unlockedview" style="display:none">
+          <div class="badge-live" style="margin-bottom:10px">✓ Licensed — unlimited access</div>
+          <p style="color:var(--muted);font-size:13px;margin:0 0 10px">Paste this just before <span class="mono">&lt;/body&gt;</span> on any page. Re-customize and re-copy as often as you like.</p>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn btn-primary btn-sm" onclick="copyEmbed()">📋 Copy embed code</button>
+            <button class="btn btn-ghost btn-sm" onclick="downloadCfg()">⬇ Download config (.json)</button>
+            <span id="embcopied" style="color:var(--success);font-size:12px;align-self:center"></span>
+          </div>
+          <div class="codeblock" id="embedout" style="margin-top:12px;max-height:340px;overflow:auto;white-space:pre-wrap;word-break:break-all"></div>
+        </div>
+
+        <!-- LOCKED view (pay flow) -->
+        <div id="lockedview">
         <p style="color:var(--muted);font-size:13px;margin:0 0 12px">The live preview is free to try. The ready-to-paste embed snippet is a paid feature. Easiest way: <b>buy via Telegram</b> — pay, send your receipt, and the bot delivers your code automatically once approved.</p>
 
         <div style="background:var(--blue-soft);border-radius:10px;padding:12px;margin-bottom:14px">
@@ -109,6 +135,7 @@
 &lt;script src="…/faq-widget.js" defer&gt;&lt;/script&gt;</div>
           <div style="position:absolute;inset:0;display:grid;place-items:center;font-weight:700;color:var(--blue)">🔒 Embed code locked</div>
         </div>
+        </div><!-- /lockedview -->
       </div>
 
       <div class="panel panel-pad" style="margin-top:18px">
@@ -170,6 +197,43 @@ function apply(){
   window.NovaFAQWidget.init(cfg);
   document.getElementById('status').textContent='Preview updated ✓ (bottom-right)';
   setTimeout(()=>document.getElementById('status').textContent='',2500);
+  refreshEmbed();
+}
+
+// ---- license / transaction-number unlock ----
+const LICENSE_KEY = 'faq_license';
+function validTxn(code){
+  const m = /^TXN-([0-9A-Z]{8})-([0-9A-Z])$/.exec(String(code||'').trim().toUpperCase());
+  if(!m) return false;
+  const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  let sum=0; for(const c of m[1]) sum += c.charCodeAt(0);
+  return chars[sum%36] === m[2];
+}
+function isLicensed(){ try { return validTxn(localStorage.getItem(LICENSE_KEY)||''); } catch(e){ return false; } }
+function buildEmbed(cfg){
+  return '<!-- Floating FAQ chatbot — paste just before </body> -->\n<script>\n  window.NovaFAQ = ' +
+    JSON.stringify(slimConfig(cfg), null, 2) + ';\n<\/script>\n<script src="' + WIDGET_URL + '" defer><\/script>';
+}
+function refreshEmbed(){ if(isLicensed()){ const el=document.getElementById('embedout'); if(el) el.textContent = buildEmbed(currentConfig()); } }
+function applyLicense(){
+  if(!isLicensed()) return;
+  const code=(localStorage.getItem(LICENSE_KEY)||'').toUpperCase();
+  document.getElementById('lockedview').style.display='none';
+  document.getElementById('unlockedview').style.display='block';
+  document.getElementById('txninput').value=code;
+  document.getElementById('txnmsg').innerHTML='<span style="color:var(--success)">✓ Unlocked with '+code+'</span>';
+  refreshEmbed();
+}
+function unlockTxn(){
+  const code=(document.getElementById('txninput').value||'').trim().toUpperCase();
+  const msg=document.getElementById('txnmsg');
+  if(validTxn(code)){ try{ localStorage.setItem(LICENSE_KEY, code); }catch(e){} applyLicense(); }
+  else { msg.innerHTML='<span style="color:var(--danger)">Invalid transaction number. You get one after purchasing via the Telegram bot.</span>'; }
+}
+function copyEmbed(){
+  navigator.clipboard.writeText(document.getElementById('embedout').textContent).then(()=>{
+    const s=document.getElementById('embcopied'); s.textContent='Copied! ✓'; setTimeout(()=>s.textContent='',2000);
+  });
 }
 // The buyer downloads this config (.json) and UPLOADS it to the Telegram bot,
 // which returns an embed snippet built from THEIR exact config (brand/logo/color/FAQs).
@@ -207,6 +271,7 @@ document.getElementById('logofile').addEventListener('change', e => {
 
 // boot with the sample
 loadSample();
+applyLicense();   // auto-unlock if a valid transaction number was saved here before
 </script>
 </body>
 </html>
