@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Demo · Large-Spreadsheet Filter & Billing Console</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Public+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="demo-banner">Interactive demo — runs entirely in your browser on fabricated sample data. <a href="index.html">← Back to portfolio</a></div>
+
+<nav class="nav">
+  <div class="wrap">
+    <div class="brand"><span class="mark">PR</span> Prixie&nbsp;Roxan</div>
+    <div class="nav-links"><a href="index.html">Portfolio</a><a href="demo-dashboard.html">Dashboard demo</a><a href="demo-mcp.html">MCP demo</a></div>
+  </div>
+</nav>
+
+<header class="demo-head">
+  <div class="wrap">
+    <div class="tag">Data processing service</div>
+    <h1>Large-Spreadsheet Filter & Billing Console</h1>
+    <p>The real service streams 290,000+ row exports server-side, filters by transaction code + status, and produces a monthly billing report + invoice PDF. The browser only ever receives counts and a result link — never raw records. This demo simulates that flow with sample data.</p>
+  </div>
+</header>
+
+<main class="wrap" style="padding-bottom:40px">
+  <div class="row">
+    <!-- LEFT: wizard -->
+    <div class="col" style="flex:1.1">
+      <div class="panel panel-pad">
+        <h3 style="margin-bottom:4px">Billing run wizard</h3>
+        <p style="color:var(--muted);font-size:14px;margin-top:4px">Pick a period and direction, preview the settled count, then generate.</p>
+
+        <label class="fld">Month</label>
+        <select id="month">
+          <option>January 2025</option><option>February 2025</option>
+          <option selected>March 2025</option><option>April 2025</option>
+        </select>
+
+        <label class="fld">Direction</label>
+        <select id="dir">
+          <option value="in">Incoming (QRPH) — fee = max(amount × 0.7%, ₱1)</option>
+          <option value="out">Outgoing (Disburse) — flat ₱3.50 / txn</option>
+        </select>
+
+        <label class="fld">Source export file</label>
+        <select id="file">
+          <option>03152025_transactions_export.xlsx</option>
+          <option selected>03262025_transactions_export.xlsx</option>
+          <option>03272025_transactions_export.xlsx</option>
+        </select>
+
+        <div style="display:flex;gap:10px;margin-top:22px">
+          <button class="btn btn-ghost" onclick="preview()">Preview count</button>
+          <button class="btn btn-primary" onclick="generate()">Generate report →</button>
+        </div>
+
+        <div id="previewbox" style="margin-top:20px;display:none">
+          <div class="kpi-grid">
+            <div class="kpi"><div class="n" id="pv-scanned">—</div><div class="l">rows scanned</div></div>
+            <div class="kpi"><div class="n" id="pv-settled">—</div><div class="l">SETTLED rows</div></div>
+            <div class="kpi"><div class="n" id="pv-fee">—</div><div class="l">total fee</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel panel-pad" style="margin-top:20px">
+        <h3 style="margin-bottom:10px">How it stays safe at scale</h3>
+        <table>
+          <tr><td>Streaming read</td><td>Rows batched 20k at a time via the Sheets API — constant memory.</td></tr>
+          <tr><td>Header offset</td><td>Skips report metadata rows; detects the true header row.</td></tr>
+          <tr><td>Server-side only</td><td>Raw rows never leave the service; client gets <span class="mono">{count, fileUrl}</span>.</td></tr>
+          <tr><td>Deterministic fees</td><td>Formulas live in the template — no value is hardcoded into output.</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <!-- RIGHT: result + api -->
+    <div class="col">
+      <div class="panel panel-pad">
+        <h3 style="margin-bottom:10px">Result</h3>
+        <div id="result" style="color:var(--muted);font-size:14px">Run a preview or generate to see output here.</div>
+        <div id="resultcard" style="display:none;margin-top:14px">
+          <div class="badge-live">Generated</div>
+          <table style="margin-top:12px">
+            <tr><td>Billing Report</td><td class="mono"><a href="#" onclick="return false">03_March/03262025/Billing_Report</a></td></tr>
+            <tr><td>Invoice PDF</td><td class="mono"><a href="#" onclick="return false">03_March/03262025/Invoice.pdf</a></td></tr>
+            <tr><td>Validation</td><td><span style="color:var(--success);font-weight:600">✓ 0 formula errors</span></td></tr>
+          </table>
+        </div>
+      </div>
+
+      <div class="panel panel-pad" style="margin-top:20px">
+        <h3 style="margin-bottom:10px">API contract</h3>
+        <div class="codeblock"><span class="c">// POST /filter</span>
+{
+  <span class="k">"sourceFileId"</span>: <span class="s">"1AbC…xyz"</span>,
+  <span class="k">"headerRow"</span>: <span class="s">13</span>,
+  <span class="k">"filters"</span>: [
+    { <span class="k">"column"</span>:<span class="s">"A"</span>, <span class="k">"equals"</span>:<span class="s">"MERCHANT_CODE"</span> },
+    { <span class="k">"column"</span>:<span class="s">"Status"</span>, <span class="k">"equals"</span>:<span class="s">"SETTLED"</span> }
+  ]
+}
+<span class="c">// → response</span>
+{ <span class="k">"ok"</span>:true, <span class="k">"count"</span>:62,
+  <span class="k">"outputFileUrl"</span>:<span class="s">"https://…"</span> }</div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer><div class="wrap"><div>Demo · sample data only.</div><div><a href="index.html">← Portfolio</a></div></div></footer>
+
+<script>
+// fabricated, deterministic sample data per file+direction
+const DATA = {
+  '03152025_transactions_export.xlsx': { in:{scanned:41280, settled:58}, out:{scanned:41280, settled:44} },
+  '03262025_transactions_export.xlsx': { in:{scanned:52910, settled:62}, out:{scanned:52910, settled:50} },
+  '03272025_transactions_export.xlsx': { in:{scanned:48715, settled:50}, out:{scanned:48715, settled:39} },
+};
+const peso = n => '₱' + n.toLocaleString('en-PH', {minimumFractionDigits:2, maximumFractionDigits:2});
+function calc(){
+  const f = document.getElementById('file').value;
+  const dir = document.getElementById('dir').value;
+  const d = DATA[f][dir];
+  // sample fee: incoming ~ avg ₱1,850 * 0.7% capped at ₱1 min; outgoing flat 3.5
+  let fee;
+  if(dir==='in'){ fee = d.settled * Math.max(1850*0.007, 1); }
+  else { fee = d.settled * 3.5; }
+  return {...d, fee};
+}
+function preview(){
+  const r = calc();
+  document.getElementById('previewbox').style.display='block';
+  document.getElementById('pv-scanned').textContent = r.scanned.toLocaleString();
+  document.getElementById('pv-settled').textContent = r.settled;
+  document.getElementById('pv-fee').textContent = peso(r.fee);
+}
+function generate(){
+  preview();
+  document.getElementById('result').style.display='none';
+  document.getElementById('resultcard').style.display='block';
+}
+</script>
+</body>
+</html>

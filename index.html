@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prixie Roxan — Cloud Automation & AI Integration Portfolio</title>
+<meta name="description" content="A portfolio of production cloud services, automation pipelines, and AI tool integrations — interactive demos with sample data.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Public+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<nav class="nav">
+  <div class="wrap">
+    <div class="brand"><span class="mark">PR</span> Prixie&nbsp;Roxan</div>
+    <div class="nav-links">
+      <a href="#projects">Projects</a>
+      <a href="#stack">Stack</a>
+      <a href="#about">About</a>
+    </div>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="wrap">
+    <span class="eyebrow">Cloud Automation · AI Integration</span>
+    <h1>I build <span class="grad">production cloud services</span> that automate real back-office work.</h1>
+    <p class="lead">Document generation, large-scale data processing, AI-platform analytics, and Model Context Protocol integrations — deployed as secure, serverless microservices. Below are interactive demos running on safe sample data.</p>
+    <div class="cta">
+      <a class="btn btn-primary" href="#projects">View live demos →</a>
+      <a class="btn btn-ghost" href="https://github.com/prixieroxanbooc" target="_blank" rel="noopener">GitHub</a>
+    </div>
+    <div class="stats">
+      <div class="stat"><div class="n">6+</div><div class="l">production services shipped</div></div>
+      <div class="stat"><div class="n">290k+</div><div class="l">rows processed per file</div></div>
+      <div class="stat"><div class="n">100+</div><div class="l">AI tools wired via MCP</div></div>
+      <div class="stat"><div class="n">100%</div><div class="l">serverless · pay-per-use</div></div>
+    </div>
+  </div>
+</header>
+
+<section class="section" id="projects">
+  <div class="wrap">
+    <h2>Selected projects</h2>
+    <p class="sub">Each card opens an interactive demo replica. Demos use fabricated sample data — no real or confidential information is included.</p>
+
+    <div class="grid">
+
+      <!-- 1 -->
+      <article class="card">
+        <div class="ico" style="background:#eaf0fb;color:#2451b8">📊</div>
+        <div class="tag">Data processing</div>
+        <h3>Large-Spreadsheet Filter & Billing Console</h3>
+        <p>Server-side service that filters 290k+ row spreadsheet exports without ever loading raw data into the browser, then generates a monthly billing report and invoice PDF — fully deterministic and auditable.</p>
+        <div class="meta"><span class="chip">Node.js</span><span class="chip">Express</span><span class="chip alt">Sheets API</span><span class="chip alt">Drive API</span></div>
+        <div class="foot">
+          <a href="demo-spreadsheet-filter.html">Open demo →</a>
+          <span class="badge-demo">Interactive demo</span>
+        </div>
+      </article>
+
+      <!-- 2 -->
+      <article class="card">
+        <div class="ico" style="background:#eef7f8;color:#0d7e8c">📈</div>
+        <div class="tag">Analytics · Governance</div>
+        <h3>AI Usage Analytics Dashboard</h3>
+        <p>Adoption & roster dashboard for an internal AI platform: active users, growth trend, breakdowns by role and team, plus role-based access control and a full audit trail.</p>
+        <div class="meta"><span class="chip">Express</span><span class="chip">Firestore</span><span class="chip alt">RBAC</span><span class="chip alt">Audit log</span></div>
+        <div class="foot">
+          <a href="demo-dashboard.html">Open demo →</a>
+          <span class="badge-demo">Interactive demo</span>
+        </div>
+      </article>
+
+      <!-- 3 -->
+      <article class="card">
+        <div class="ico" style="background:#eaf0fb;color:#2451b8">📄</div>
+        <div class="tag">Document automation</div>
+        <h3>Loan Document Generator</h3>
+        <p>A microservice that fills Word (DOCX) templates from structured JSON — two document bundles, 54 fields total. A pure templater: it inserts values verbatim and runs no financial computation, by design.</p>
+        <div class="meta"><span class="chip">Node.js</span><span class="chip">docxtemplater</span><span class="chip alt">REST API</span></div>
+        <div class="foot">
+          <a href="demo-loan-docs.html">Open demo →</a>
+          <span class="badge-demo">Interactive demo</span>
+        </div>
+      </article>
+
+      <!-- 4 -->
+      <article class="card">
+        <div class="ico" style="background:#eef7f8;color:#0d7e8c">🔌</div>
+        <div class="tag">AI integration</div>
+        <h3>MCP Server Fleet</h3>
+        <p>A fleet of Model Context Protocol servers that let an AI assistant act on Gmail, Sheets, Docs/Drive and Slides — each with per-user OAuth identity and destructive actions disabled by default.</p>
+        <div class="meta"><span class="chip">MCP</span><span class="chip">OAuth 2.0</span><span class="chip alt">FastMCP</span><span class="chip alt">100+ tools</span></div>
+        <div class="foot">
+          <a href="demo-mcp.html">Open demo →</a>
+          <span class="badge-demo">Interactive demo</span>
+        </div>
+      </article>
+
+      <!-- 5 -->
+      <article class="card">
+        <div class="ico" style="background:#eaf0fb;color:#2451b8">🧩</div>
+        <div class="tag">AI integration</div>
+        <h3>Platform Tool Wrapper & Chat Client</h3>
+        <p>An MCP wrapper exposing 100+ capabilities of a self-hosted AI platform as callable tools, plus a lightweight chat client that connects to MCP servers over streamable HTTP / JSON-RPC.</p>
+        <div class="meta"><span class="chip">Python</span><span class="chip">FastAPI</span><span class="chip alt">JSON-RPC</span></div>
+        <div class="foot">
+          <a href="demo-mcp.html#wrapper">Details →</a>
+          <span class="badge-demo">Interactive demo</span>
+        </div>
+      </article>
+
+      <!-- 6 -->
+      <article class="card">
+        <div class="ico" style="background:#eef7f8;color:#0d7e8c">🛡️</div>
+        <div class="tag">Security pattern</div>
+        <h3>Identity-Verified Access Layer</h3>
+        <p>A reusable access pattern: identity-aware proxy (IAP-style) at the edge gates services to an organization domain, with a Firestore allowlist + roles enforced inside the app. Used across every service here.</p>
+        <div class="meta"><span class="chip">IAP</span><span class="chip">Zero public exposure</span><span class="chip alt">Secret Manager</span></div>
+        <div class="foot">
+          <a href="demo-dashboard.html#security">See it applied →</a>
+          <span class="badge-demo">Pattern</span>
+        </div>
+      </article>
+
+    </div>
+  </div>
+</section>
+
+<section class="section" id="stack" style="background:#fff;border-top:1px solid var(--border);border-bottom:1px solid var(--border)">
+  <div class="wrap">
+    <h2>Stack & approach</h2>
+    <p class="sub">Patterns I reach for repeatedly across these projects.</p>
+    <div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(260px,1fr))">
+      <div class="card"><h3>Serverless first</h3><p>Stateless containers on managed serverless runtimes — scale to zero, pay per request, no servers to patch.</p></div>
+      <div class="card"><h3>Data stays server-side</h3><p>Heavy data work (hundreds of thousands of rows) happens in the service; clients and AI contexts only ever see results, never raw records.</p></div>
+      <div class="card"><h3>Secure by default</h3><p>Identity-aware proxy at the edge, role-based access inside, secrets in a managed vault, and an audit trail on sensitive actions.</p></div>
+      <div class="card"><h3>Deterministic over magic</h3><p>For anything financial or compliance-sensitive, logic is explicit and repeatable — no AI guessing at numbers at runtime.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="about">
+  <div class="wrap">
+    <div class="row">
+      <div class="col">
+        <h2>About</h2>
+        <p class="sub" style="font-size:16px">I work on automation and AI integration — turning manual, error-prone back-office tasks into secure, observable cloud services. My focus is on the boring-but-critical parts: large-file processing that doesn't fall over, document pipelines that produce the exact same output every time, and AI integrations that are governed and auditable rather than a black box.</p>
+        <p class="sub" style="font-size:16px;margin-top:14px">The demos on this site are de-identified replicas of real systems I've shipped to production. All names, numbers, and records shown are fabricated samples.</p>
+      </div>
+      <div class="col">
+        <div class="panel panel-pad">
+          <h3 style="margin-bottom:10px">Highlights</h3>
+          <table>
+            <tr><td>Largest file processed</td><td class="mono">290,000+ rows</td></tr>
+            <tr><td>Document fields automated</td><td class="mono">54 across 2 bundles</td></tr>
+            <tr><td>AI tools integrated</td><td class="mono">100+ via MCP</td></tr>
+            <tr><td>Services in production</td><td class="mono">6+</td></tr>
+            <tr><td>Deployment model</td><td class="mono">serverless / scale-to-zero</td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div>© <span id="yr"></span> Prixie Roxan — personal portfolio. Demos use sample data only.</div>
+    <div><a href="https://github.com/prixieroxanbooc" target="_blank" rel="noopener">github.com/prixieroxanbooc</a></div>
+  </div>
+</footer>
+
+<script>document.getElementById('yr').textContent = new Date().getFullYear();</script>
+</body>
+</html>

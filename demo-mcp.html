@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Demo · MCP Server Fleet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Public+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="demo-banner">Interactive demo — simulated tool calls, no real accounts connected. <a href="index.html">← Back to portfolio</a></div>
+
+<nav class="nav">
+  <div class="wrap">
+    <div class="brand"><span class="mark">PR</span> Prixie&nbsp;Roxan</div>
+    <div class="nav-links"><a href="index.html">Portfolio</a><a href="demo-spreadsheet-filter.html">Filter demo</a><a href="demo-dashboard.html">Dashboard demo</a></div>
+  </div>
+</nav>
+
+<header class="demo-head">
+  <div class="wrap">
+    <div class="tag">AI integration · Model Context Protocol</div>
+    <h1>MCP Server Fleet</h1>
+    <p>A set of Model Context Protocol servers that let an AI assistant safely act inside Google Workspace and a self-hosted AI platform. A gateway maps each profile to a user identity and injects it upstream; every server enforces <strong>per-user OAuth</strong> and ships with <strong>destructive tools disabled by default</strong>.</p>
+  </div>
+</header>
+
+<main class="wrap" style="padding-bottom:40px">
+
+  <!-- server cards -->
+  <div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(220px,1fr))">
+    <div class="card"><div class="ico" style="background:#fdeef0;color:#c23b2e">✉️</div><h3>Gmail</h3><p>Read, search, draft, label, send.</p><div class="meta"><span class="chip">58 tools</span></div></div>
+    <div class="card"><div class="ico" style="background:#eef7ef;color:#1e9e6a">📗</div><h3>Sheets</h3><p>Read ranges, append, batch-update, format.</p><div class="meta"><span class="chip">Sheets API</span></div></div>
+    <div class="card"><div class="ico" style="background:#eaf0fb;color:#2451b8">📘</div><h3>Docs + Drive</h3><p>Create/edit docs, manage files & folders.</p><div class="meta"><span class="chip">61 tools</span></div></div>
+    <div class="card"><div class="ico" style="background:#fbf3e6;color:#c9821b">📙</div><h3>Slides</h3><p>Build decks, add slides, replace text.</p><div class="meta"><span class="chip">32 tools</span></div></div>
+  </div>
+
+  <div class="row" style="margin-top:24px">
+    <!-- gateway flow -->
+    <div class="col">
+      <div class="panel panel-pad">
+        <h3 style="margin-bottom:12px">How the gateway routes a call</h3>
+        <ol style="color:var(--muted);font-size:14.5px;line-height:1.9;padding-left:20px;margin:0">
+          <li>Assistant calls a tool with a profile <span class="mono">key</span>.</li>
+          <li>Gateway maps <span class="mono">key → identity</span> (user email).</li>
+          <li>Injects <span class="mono">x-api-key: identity</span> to the upstream server.</li>
+          <li>Server loads <em>that user's</em> OAuth token and acts as them.</li>
+          <li>Denylist + safe-defaults block destructive tools unless explicitly enabled.</li>
+        </ol>
+        <div style="margin-top:14px"><span class="badge-live">Per-user identity enforced</span></div>
+      </div>
+
+      <div class="panel panel-pad" style="margin-top:20px" id="wrapper">
+        <h3 style="margin-bottom:10px">Platform tool wrapper & chat client</h3>
+        <p style="color:var(--muted);font-size:14px;margin:0 0 8px">An MCP wrapper exposes 100+ capabilities of a self-hosted AI platform as callable tools; a FastAPI chat client connects to MCP servers over streamable HTTP / JSON-RPC.</p>
+        <div class="meta"><span class="chip">112 tools</span><span class="chip alt">FastMCP</span><span class="chip alt">JSON-RPC</span></div>
+      </div>
+    </div>
+
+    <!-- simulated tool call -->
+    <div class="col" style="flex:1.1">
+      <div class="panel panel-pad">
+        <h3 style="margin-bottom:10px">Try a simulated tool call</h3>
+        <label class="fld">Pick a tool</label>
+        <select id="tool" onchange="reset()">
+          <option value="search">gmail.search_messages</option>
+          <option value="append">sheets.append_row</option>
+          <option value="delete">drive.delete_file ⚠️ (destructive)</option>
+        </select>
+        <button class="btn btn-primary" style="margin-top:16px" onclick="callTool()">Invoke →</button>
+        <div class="codeblock" id="out" style="margin-top:16px">// response appears here</div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer><div class="wrap"><div>Demo · simulated, no real accounts.</div><div><a href="index.html">← Portfolio</a></div></div></footer>
+
+<script>
+function reset(){ document.getElementById('out').innerHTML='// response appears here'; }
+function callTool(){
+  const t=document.getElementById('tool').value;
+  const out=document.getElementById('out');
+  if(t==='search'){
+    out.innerHTML=`<span class="c">// identity resolved → user@example.com</span>
+{
+  <span class="k">"matches"</span>: 3,
+  <span class="k">"messages"</span>: [
+    { <span class="k">"from"</span>:<span class="s">"billing@vendor.example"</span>, <span class="k">"subject"</span>:<span class="s">"March statement"</span> },
+    { <span class="k">"from"</span>:<span class="s">"ops@example.com"</span>, <span class="k">"subject"</span>:<span class="s">"Recon summary"</span> }
+  ]
+}`;
+  } else if(t==='append'){
+    out.innerHTML=`<span class="c">// identity resolved → user@example.com</span>
+{ <span class="k">"ok"</span>:true, <span class="k">"updatedRange"</span>:<span class="s">"Sheet1!A42:D42"</span>,
+  <span class="k">"appended"</span>:1 }`;
+  } else {
+    out.innerHTML=`<span class="c">// 🛡️ blocked by safe-defaults policy</span>
+{
+  <span class="k">"error"</span>: <span class="s">"tool_disabled"</span>,
+  <span class="k">"reason"</span>: <span class="s">"destructive tool off by default"</span>,
+  <span class="k">"hint"</span>: <span class="s">"enable per-profile in admin panel"</span>
+}`;
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Demo · Loan Document Generator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Public+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="demo-banner">Interactive demo — builds a preview in your browser; no real document service is called. <a href="index.html">← Back to portfolio</a></div>
+
+<nav class="nav">
+  <div class="wrap">
+    <div class="brand"><span class="mark">PR</span> Prixie&nbsp;Roxan</div>
+    <div class="nav-links"><a href="index.html">Portfolio</a><a href="demo-spreadsheet-filter.html">Filter demo</a><a href="demo-dashboard.html">Dashboard demo</a></div>
+  </div>
+</nav>
+
+<header class="demo-head">
+  <div class="wrap">
+    <div class="tag">Document automation service</div>
+    <h1>Loan Document Generator</h1>
+    <p>A REST microservice that fills Word (DOCX) templates from a JSON payload — two document bundles, 54 fields total. It is a <strong>pure templater</strong>: it inserts caller-supplied values verbatim and performs no financial computation, so legal/finance review stays in control. Fill the form to see the request it would send and a rendered preview.</p>
+  </div>
+</header>
+
+<main class="wrap" style="padding-bottom:40px">
+  <div class="row">
+    <div class="col">
+      <div class="panel panel-pad">
+        <h3 style="margin-bottom:6px">Generate a document</h3>
+
+        <label class="fld">Document bundle</label>
+        <select id="bundle" onchange="render()">
+          <option value="vehicle">Vehicle loan bundle (24 fields)</option>
+          <option value="grab">Ride-hailing partner loan (30 fields)</option>
+        </select>
+
+        <label class="fld">Borrower name</label>
+        <input type="text" id="name" value="Juan Dela Cruz" oninput="render()">
+
+        <label class="fld">Loan amount (₱)</label>
+        <input type="text" id="amount" value="450,000.00" oninput="render()">
+
+        <label class="fld">Amount in words</label>
+        <input type="text" id="words" value="Four Hundred Fifty Thousand Pesos" oninput="render()">
+
+        <label class="fld">Term (months)</label>
+        <input type="number" id="term" value="36" oninput="render()">
+
+        <div style="margin-top:20px">
+          <button class="btn btn-primary" onclick="render()">Build request →</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="col" style="flex:1.2">
+      <div class="panel">
+        <div class="panel-pad" style="border-bottom:1px solid var(--border)">
+          <div class="tabs" style="margin:0;border:0">
+            <div class="tab active" id="t1" onclick="tab(1)">Request (JSON)</div>
+            <div class="tab" id="t2" onclick="tab(2)">Document preview</div>
+          </div>
+        </div>
+        <div class="panel-pad">
+          <div id="pane1">
+            <div style="color:var(--muted);font-size:13px;margin-bottom:8px" class="mono" id="endpoint"></div>
+            <div class="codeblock" id="json"></div>
+          </div>
+          <div id="pane2" style="display:none">
+            <div style="border:1px solid var(--border);border-radius:10px;padding:28px;font-family:Georgia,serif;line-height:1.7;background:#fff" id="doc"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel panel-pad" style="margin-top:20px">
+        <h3 style="margin-bottom:10px">Why no auto-computation?</h3>
+        <p style="color:var(--muted);font-size:14px;margin:0">Interest, effective rate, documentary stamp tax, and deductions are <strong>not</strong> calculated by the service — they arrive pre-computed from the upstream system after legal/finance review. The service's only job is faithful placeholder replacement, which keeps the output auditable and the compliance boundary clean.</p>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer><div class="wrap"><div>Demo · sample data only.</div><div><a href="index.html">← Portfolio</a></div></div></footer>
+
+<script>
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;');}
+function render(){
+  const bundle=document.getElementById('bundle').value;
+  const name=document.getElementById('name').value;
+  const amount=document.getElementById('amount').value;
+  const words=document.getElementById('words').value;
+  const term=document.getElementById('term').value;
+  const ep = bundle==='vehicle' ? 'POST /generate' : 'POST /generate-grab';
+  document.getElementById('endpoint').textContent='// '+ep+'  (header: x-api-key)';
+  document.getElementById('json').innerHTML =
+`{
+  <span class="k">"borrowerName"</span>: <span class="s">"${esc(name)}"</span>,
+  <span class="k">"loanAmount"</span>: <span class="s">"${esc(amount)}"</span>,
+  <span class="k">"amountInWords"</span>: <span class="s">"${esc(words)}"</span>,
+  <span class="k">"termMonths"</span>: <span class="s">"${esc(term)}"</span>,
+  <span class="c">// …${bundle==='vehicle'?20:26} more fields, all caller-supplied</span>
+}`;
+  document.getElementById('doc').innerHTML =
+`<div style="text-align:center;font-weight:bold;letter-spacing:.05em">${bundle==='vehicle'?'VEHICLE':'PARTNER'} LOAN AGREEMENT</div>
+<hr style="margin:16px 0">
+<p>This Agreement is entered into by and between the Lender and <b>${esc(name)}</b> ("Borrower").</p>
+<p>The Borrower acknowledges a loan in the principal amount of <b>₱${esc(amount)}</b>
+(<i>${esc(words)}</i>), payable over a term of <b>${esc(term)} months</b>.</p>
+<p style="color:#888">…remaining clauses populated from the template's {{placeholders}}.</p>`;
+}
+function tab(n){
+  document.getElementById('t1').classList.toggle('active',n===1);
+  document.getElementById('t2').classList.toggle('active',n===2);
+  document.getElementById('pane1').style.display=n===1?'block':'none';
+  document.getElementById('pane2').style.display=n===2?'block':'none';
+}
+render();
+</script>
+</body>
+</html>

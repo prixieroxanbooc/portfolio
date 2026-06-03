@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Demo · AI Usage Analytics Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Public+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="demo-banner">Interactive demo — fabricated sample data, no real users. <a href="index.html">← Back to portfolio</a></div>
+
+<nav class="nav">
+  <div class="wrap">
+    <div class="brand"><span class="mark">PR</span> Prixie&nbsp;Roxan</div>
+    <div class="nav-links"><a href="index.html">Portfolio</a><a href="demo-spreadsheet-filter.html">Filter demo</a><a href="demo-mcp.html">MCP demo</a></div>
+  </div>
+</nav>
+
+<header class="demo-head">
+  <div class="wrap">
+    <div class="tag">Analytics & governance</div>
+    <h1>AI Usage Analytics Dashboard</h1>
+    <p>Gives leadership real visibility into who is using an internal AI platform — totals, growth, and breakdowns by role and team — behind an identity-aware proxy with role-based access and a full audit trail. All figures below are sample data.</p>
+  </div>
+</header>
+
+<main class="wrap" style="padding-bottom:40px">
+
+  <!-- KPIs -->
+  <div class="kpi-grid">
+    <div class="kpi"><div class="n">107</div><div class="l">total accounts</div><div class="d up">▲ 12 new (30d)</div></div>
+    <div class="kpi"><div class="n">71</div><div class="l">active (7d)</div><div class="d up">▲ 6%</div></div>
+    <div class="kpi"><div class="n">14</div><div class="l">admins</div><div class="d">93 standard</div></div>
+    <div class="kpi"><div class="n">9</div><div class="l">dormant (30d)</div><div class="d down">needs enablement</div></div>
+    <div class="kpi"><div class="n">5</div><div class="l">pending invites</div><div class="d">awaiting first login</div></div>
+  </div>
+
+  <div class="row" style="margin-top:22px">
+    <!-- growth chart -->
+    <div class="col" style="flex:1.4">
+      <div class="panel panel-pad">
+        <h3 style="margin-bottom:6px">Account growth</h3>
+        <p style="color:var(--muted);font-size:13px;margin:0 0 10px">Cumulative provisioned accounts — sample</p>
+        <svg id="chart" viewBox="0 0 640 240" width="100%" height="240" role="img" aria-label="growth chart"></svg>
+      </div>
+    </div>
+    <!-- by role -->
+    <div class="col">
+      <div class="panel panel-pad">
+        <h3 style="margin-bottom:12px">By department</h3>
+        <table>
+          <thead><tr><th>Team</th><th>Members</th><th>Active</th></tr></thead>
+          <tbody>
+            <tr><td>AI / Automation</td><td>4</td><td><span style="color:var(--success)">4</span></td></tr>
+            <tr><td>Operations</td><td>28</td><td><span style="color:var(--success)">21</span></td></tr>
+            <tr><td>Finance</td><td>19</td><td><span style="color:var(--success)">14</span></td></tr>
+            <tr><td>Credit & Risk</td><td>22</td><td><span style="color:var(--success)">15</span></td></tr>
+            <tr><td>Branch network</td><td>26</td><td><span style="color:var(--warning)">12</span></td></tr>
+            <tr><td>Unassigned</td><td>8</td><td>—</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="row" style="margin-top:22px">
+    <!-- recent activity -->
+    <div class="col" style="flex:1.4">
+      <div class="panel panel-pad">
+        <h3 style="margin-bottom:12px">Recent sign-ups</h3>
+        <table>
+          <thead><tr><th>User</th><th>Role</th><th>Team</th><th>Joined</th></tr></thead>
+          <tbody id="recent"></tbody>
+        </table>
+      </div>
+    </div>
+    <!-- security panel -->
+    <div class="col" id="security">
+      <div class="panel panel-pad">
+        <h3 style="margin-bottom:10px">Access & governance</h3>
+        <table>
+          <tr><td>Edge auth</td><td>Identity-aware proxy — org domain only, no public exposure</td></tr>
+          <tr><td>In-app roles</td><td><span class="mono">super_admin</span> / <span class="mono">member</span> (view-only)</td></tr>
+          <tr><td>Audit trail</td><td>Every view, grant, revoke & denied attempt logged</td></tr>
+          <tr><td>Secrets</td><td>Platform API key stored in a managed secret vault</td></tr>
+        </table>
+        <div style="margin-top:14px"><span class="badge-live">Audit logging on</span></div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer><div class="wrap"><div>Demo · sample data only.</div><div><a href="index.html">← Portfolio</a></div></div></footer>
+
+<script>
+// --- growth chart (sample cumulative) ---
+const pts = [4,9,18,31,47,63,78,89,97,103,107];
+const W=640,H=240,pad=30;
+const max=Math.max(...pts), stepX=(W-pad*2)/(pts.length-1);
+const x=i=>pad+i*stepX, y=v=>H-pad-(v/max)*(H-pad*2);
+let line='', area=`M${x(0)},${H-pad} `;
+pts.forEach((v,i)=>{ line+=(i?'L':'M')+x(i)+','+y(v)+' '; area+='L'+x(i)+','+y(v)+' '; });
+area+=`L${x(pts.length-1)},${H-pad} Z`;
+const svg=document.getElementById('chart');
+svg.innerHTML=`
+  <defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#3b6fe0" stop-opacity=".28"/>
+    <stop offset="1" stop-color="#3b6fe0" stop-opacity="0"/></linearGradient></defs>
+  <path d="${area}" fill="url(#g)"/>
+  <path d="${line}" fill="none" stroke="#2451b8" stroke-width="2.5" stroke-linejoin="round"/>
+  ${pts.map((v,i)=>`<circle cx="${x(i)}" cy="${y(v)}" r="3" fill="#fff" stroke="#2451b8" stroke-width="2"/>`).join('')}
+`;
+// --- recent sign-ups (fabricated) ---
+const recent=[
+  ['Maria S.','Standard','Operations','2 days ago'],
+  ['John P.','Admin','AI / Automation','4 days ago'],
+  ['Rina T.','Standard','Finance','5 days ago'],
+  ['Carlo D.','Standard','Credit & Risk','1 week ago'],
+  ['Ella M.','Standard','Branch network','1 week ago'],
+];
+document.getElementById('recent').innerHTML = recent.map(r=>
+  `<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td style="color:var(--muted)">${r[3]}</td></tr>`).join('');
+</script>
+</body>
+</html>
