@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NovaBank — Sample site (FAQ widget embedded)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{--blue:#0047AB;--navy:#0A1F44;--teal:#00B8A9;--ink:#0A1F44;--muted:#4A5568;--bg:#F5F7FA}
+  *{box-sizing:border-box} body{margin:0;font-family:"Inter",system-ui,sans-serif;color:var(--ink);background:#fff}
+  .topbanner{background:var(--navy);color:#fff;text-align:center;font-size:13px;padding:8px}
+  .topbanner a{color:#9cd0ff}
+  nav{display:flex;align-items:center;justify-content:space-between;max-width:1080px;margin:0 auto;padding:18px 24px}
+  .brand{display:flex;align-items:center;gap:10px;font-family:"Poppins";font-weight:800;font-size:20px;color:var(--navy)}
+  .mark{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,var(--blue),var(--teal));color:#fff;display:grid;place-items:center;font-weight:700}
+  .nlinks a{margin-left:22px;color:var(--muted);text-decoration:none;font-weight:500;font-size:14px}
+  .hero{max-width:1080px;margin:0 auto;padding:70px 24px 50px;text-align:center}
+  .hero h1{font-family:"Poppins";font-size:50px;line-height:1.1;letter-spacing:-.02em;margin:0 0 18px;color:var(--navy)}
+  .hero h1 span{background:linear-gradient(120deg,var(--blue),var(--teal));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .hero p{font-size:19px;color:var(--muted);max-width:60ch;margin:0 auto}
+  .cta{margin-top:28px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+  .btn{padding:13px 26px;border-radius:999px;font-weight:600;font-size:15px;border:1px solid transparent;cursor:pointer;text-decoration:none;display:inline-block}
+  .btn-p{background:var(--blue);color:#fff} .btn-g{background:#fff;color:var(--navy);border-color:#dce3ee}
+  .hint{margin-top:34px;font-size:14px;color:var(--blue);font-weight:600}
+  .grid{max-width:1080px;margin:0 auto;padding:30px 24px 80px;display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:22px}
+  .card{background:var(--bg);border:1px solid #e6eaf2;border-radius:16px;padding:26px}
+  .card .ic{font-size:26px} .card h3{font-family:"Poppins";margin:12px 0 6px;color:var(--navy)} .card p{color:var(--muted);font-size:14.5px;margin:0}
+  footer{background:var(--navy);color:#cdd7e6;text-align:center;padding:28px;font-size:13px}
+</style>
+</head>
+<body>
+
+<div class="topbanner">Sample marketing site — demonstrates the embedded floating FAQ widget (bottom-right ↘). <a href="faq-builder.html">Build your own →</a></div>
+
+<nav>
+  <div class="brand"><span class="mark">N</span> NovaBank</div>
+  <div class="nlinks"><a href="#">Personal</a><a href="#">Business</a><a href="#">Developers</a><a href="#">Support</a></div>
+</nav>
+
+<section class="hero">
+  <h1>Banking <span>built around you</span></h1>
+  <p>Open an account in minutes, move money in real time, and grow your savings — all from a secure, digital-first platform for people and businesses.</p>
+  <div class="cta">
+    <a class="btn btn-p" href="#">Open an account</a>
+    <a class="btn btn-g" href="#">Explore business banking</a>
+  </div>
+  <div class="hint">Got a question? Tap the chat bubble in the bottom-right ↘</div>
+</section>
+
+<section class="grid">
+  <div class="card"><div class="ic">⚡</div><h3>Instant transfers</h3><p>Send and receive money in real time via bank, QR, or wallet.</p></div>
+  <div class="card"><div class="ic">🔒</div><h3>Bank-grade security</h3><p>Multi-factor auth, encryption, and continuous fraud monitoring.</p></div>
+  <div class="card"><div class="ic">💼</div><h3>Business banking</h3><p>Collections, payroll, disbursements, and merchant payments.</p></div>
+  <div class="card"><div class="ic">🧩</div><h3>API banking</h3><p>Developer-friendly APIs and a sandbox to build on Novabank.</p></div>
+</section>
+
+<footer>NovaBank is a fictional brand created for portfolio &amp; demonstration purposes. · Banking Built Around You</footer>
+
+<!-- ============ Embedded floating FAQ widget (this is the whole integration) ============ -->
+<script src="faq-widget.js" defer></script>
+<!-- ====================================================================================== -->
+
+</body>
+</html>

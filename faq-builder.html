@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FAQ Chatbot Builder · embeddable widget</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+<script>window.NOVA_FAQ_NO_AUTOINIT = true;</script>
+<script src="faq-widget.js"></script>
+</head>
+<body>
+
+<div class="demo-banner">Build a floating FAQ chatbot — static, button-driven, no code. <a href="https://larouxantech.com/">← Back to portfolio</a></div>
+
+<nav class="nav">
+  <div class="wrap">
+    <div class="brand"><span class="mark">FAQ</span> Chatbot Builder</div>
+    <div class="nav-links"><a href="https://larouxantech.com/">Portfolio</a><a href="faq-demo-site.html">Sample site →</a></div>
+  </div>
+</nav>
+
+<header class="demo-head">
+  <div class="wrap">
+    <div class="tag">Embeddable widget · no LLM</div>
+    <h1>FAQ Chatbot Builder</h1>
+    <p>Configure a floating help widget for any website: set your brand, import a logo, pick a color, and paste your own FAQs or knowledge base. Answers are 100% static and button-driven. When you're happy with the live preview (bottom-right), copy the embed snippet and drop it into your site.</p>
+  </div>
+</header>
+
+<main class="wrap" style="padding-bottom:60px">
+  <div class="row">
+    <!-- LEFT: configure -->
+    <div class="col">
+      <div class="panel panel-pad">
+        <h3 style="margin-bottom:12px">1 · Branding</h3>
+        <label class="fld">Brand name</label>
+        <input type="text" id="brand" value="NovaBank">
+        <label class="fld">Tagline</label>
+        <input type="text" id="tagline" value="Banking Built Around You">
+        <label class="fld">Greeting message</label>
+        <input type="text" id="greeting" value="Hi! 👋 I can help with common questions. Pick a topic to get started.">
+        <div class="row" style="gap:14px">
+          <div class="col" style="flex:0 0 auto">
+            <label class="fld">Accent color</label>
+            <input type="color" id="accent" value="#0047AB" style="width:64px;height:42px;padding:3px">
+          </div>
+          <div class="col">
+            <label class="fld">Logo (optional — PNG/SVG)</label>
+            <input type="file" id="logofile" accept="image/*">
+            <div class="note" id="logonote" style="font-size:12px;color:var(--muted);margin-top:6px">Embedded into the snippet as a data URL — no hosting needed.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel panel-pad" style="margin-top:18px">
+        <h3 style="margin-bottom:6px">2 · Your FAQs / knowledge base</h3>
+        <p style="color:var(--muted);font-size:13px;margin:0 0 10px">Format: <span class="mono">[Category]</span> on its own line, then <span class="mono">Q:</span> and <span class="mono">A:</span> lines. Answers can span multiple lines (use <span class="mono">•</span> for bullets).</p>
+        <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">
+          <button class="btn btn-ghost btn-sm" onclick="loadSample()">Load NovaBank sample</button>
+          <button class="btn btn-ghost btn-sm" onclick="clearFaqs()">Clear</button>
+        </div>
+        <textarea id="faqs" spellcheck="false" style="width:100%;height:280px;font-family:var(--font-mono);font-size:12.5px;padding:12px;border:1px solid var(--border);border-radius:10px;line-height:1.5"></textarea>
+      </div>
+
+      <button class="btn btn-primary" style="margin-top:16px" onclick="apply()">↻ Update preview</button>
+      <span id="status" style="margin-left:12px;color:var(--success);font-size:13px"></span>
+    </div>
+
+    <!-- RIGHT: embed code -->
+    <div class="col">
+      <div class="panel panel-pad">
+        <h3 style="margin-bottom:8px">3 · Copy your embed code</h3>
+        <p style="color:var(--muted);font-size:13px;margin:0 0 12px">Paste this just before <span class="mono">&lt;/body&gt;</span> on any page. The widget appears bottom-right.</p>
+        <button class="btn btn-primary btn-sm" onclick="copyEmbed()">📋 Copy embed code</button>
+        <span id="copied" style="margin-left:10px;color:var(--success);font-size:13px"></span>
+        <div class="codeblock" id="embed" style="margin-top:14px;max-height:360px;overflow:auto;white-space:pre-wrap;word-break:break-all"></div>
+      </div>
+
+      <div class="panel panel-pad" style="margin-top:18px">
+        <h3 style="margin-bottom:8px">How it works</h3>
+        <ul style="color:var(--muted);font-size:13.5px;line-height:1.8;padding-left:18px;margin:0">
+          <li><b>Static & button-driven</b> — no AI, no API keys, no backend.</li>
+          <li><b>Self-contained</b> — renders in a Shadow DOM so it never clashes with your site's CSS.</li>
+          <li><b>Searchable</b> — visitors can browse topics or type a keyword.</li>
+          <li><b>One file</b> — the snippet loads a single hosted script.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer><div class="wrap"><div>FAQ Chatbot Builder · demo · sample data only.</div><div><a href="https://larouxantech.com/">← Portfolio</a></div></div></footer>
+
+<script>
+const WIDGET_URL = 'https://prixieroxanbooc.github.io/portfolio/faq-widget.js';
+let logoDataUrl = null;
+
+// ---- format <-> config ----
+function serialize(cfg){
+  return cfg.categories.map(c =>
+    '['+c.name+']\n' + c.items.map(it => 'Q: '+it.q+'\nA: '+it.a.replace(/\n/g,'\n   ')).join('\n')
+  ).join('\n\n');
+}
+function parseFaqs(text){
+  const cats = []; let cur = null, q = null, abuf = null;
+  const flush = () => { if(cur && q!=null){ cur.items.push({q:q.trim(), a:(abuf||'').trim()}); } q=null; abuf=null; };
+  text.split(/\r?\n/).forEach(raw => {
+    const line = raw;
+    const m = line.match(/^\s*\[(.+)\]\s*$/);
+    if(m){ flush(); cur={name:m[1].trim(), items:[]}; cats.push(cur); return; }
+    const mq = line.match(/^\s*Q:\s?(.*)$/i);
+    if(mq){ flush(); q=mq[1]; abuf=''; return; }
+    const ma = line.match(/^\s*A:\s?(.*)$/i);
+    if(ma){ abuf=ma[1]; return; }
+    if(q!=null && line.trim()!==''){ abuf += (abuf?'\n':'') + line.trim(); }
+  });
+  flush();
+  return cats.filter(c => c.items.length);
+}
+function currentConfig(){
+  return {
+    brand: document.getElementById('brand').value || 'Brand',
+    tagline: document.getElementById('tagline').value,
+    greeting: document.getElementById('greeting').value,
+    accent: document.getElementById('accent').value,
+    logo: logoDataUrl,
+    categories: parseFaqs(document.getElementById('faqs').value),
+  };
+}
+
+function apply(){
+  const cfg = currentConfig();
+  if(!cfg.categories.length){ document.getElementById('status').textContent='Add at least one [Category] with Q:/A:'; return; }
+  window.NovaFAQWidget.init(cfg);
+  document.getElementById('status').textContent='Preview updated ✓ (bottom-right)';
+  setTimeout(()=>document.getElementById('status').textContent='',2500);
+  renderEmbed(cfg);
+}
+function renderEmbed(cfg){
+  const json = JSON.stringify(cfg, null, 2);
+  const code =
+`<!-- Floating FAQ chatbot — paste before </body> -->
+<script>
+window.NovaFAQ = ${json};
+<\/script>
+<script src="${WIDGET_URL}" defer><\/script>`;
+  document.getElementById('embed').textContent = code;
+}
+function copyEmbed(){
+  navigator.clipboard.writeText(document.getElementById('embed').textContent).then(()=>{
+    document.getElementById('copied').textContent='Copied! ✓';
+    setTimeout(()=>document.getElementById('copied').textContent='',2500);
+  });
+}
+function loadSample(){
+  document.getElementById('brand').value = window.NovaFAQWidget.default.brand;
+  document.getElementById('tagline').value = window.NovaFAQWidget.default.tagline;
+  document.getElementById('greeting').value = window.NovaFAQWidget.default.greeting;
+  document.getElementById('accent').value = window.NovaFAQWidget.default.accent;
+  document.getElementById('faqs').value = serialize(window.NovaFAQWidget.default);
+  apply();
+}
+function clearFaqs(){ document.getElementById('faqs').value=''; }
+
+document.getElementById('logofile').addEventListener('change', e => {
+  const f = e.target.files[0]; if(!f) return;
+  const r = new FileReader();
+  r.onload = () => { logoDataUrl = r.result; document.getElementById('logonote').textContent='Logo loaded ✓'; apply(); };
+  r.readAsDataURL(f);
+});
+
+// boot with the sample
+loadSample();
+</script>
+</body>
+</html>
