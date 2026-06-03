@@ -74,13 +74,14 @@
         <h3 style="margin-bottom:8px">3 · Get your embed code 🔒</h3>
         <p style="color:var(--muted);font-size:13px;margin:0 0 14px">The live preview is free to try. The ready-to-paste embed snippet is a paid feature — scan the QR to pay, then send me your receipt and I'll deliver your code with setup help.</p>
         <div style="text-align:center;margin:6px 0 2px">
-          <img id="qr" src="qr-payment.png" alt="Payment QR"
-               style="width:200px;height:200px;object-fit:contain;border:1px solid var(--border);border-radius:14px;background:#fff;padding:10px"
-               onerror="this.style.display='none';document.getElementById('qrph').style.display='grid'">
-          <div id="qrph" style="display:none;width:200px;height:200px;margin:0 auto;border:2px dashed var(--border);border-radius:14px;place-items:center;color:var(--muted);font-size:12px;text-align:center;padding:16px">Add your payment QR as<br><span class="mono">qr-payment.png</span></div>
-          <div style="font-weight:600;margin-top:10px">Scan to unlock · Prixie Roxan</div>
-          <div style="font-size:12.5px;color:var(--muted)">After paying, message me to receive your snippet.</div>
-          <a class="btn btn-primary btn-sm" style="margin-top:12px" href="https://calendly.com/prixieroxanbooc/30min" target="_blank" rel="noopener">Contact me →</a>
+          <a id="qrlink" href="#" target="_blank" rel="noopener" title="Pay with Wise">
+            <img id="qr" alt="Wise payment QR"
+                 style="width:220px;height:220px;object-fit:contain;border:1px solid var(--border);border-radius:14px;background:#fff;padding:10px;display:inline-block">
+          </a>
+          <div style="font-weight:600;margin-top:10px">Scan to pay with Wise · Prixie Roxan</div>
+          <div style="font-size:12.5px;color:var(--muted)">Or click the QR / button to open the payment link.</div>
+          <a id="paybtn" class="btn btn-primary btn-sm" style="margin-top:12px" href="#" target="_blank" rel="noopener">💳 Pay with Wise →</a>
+          <div style="font-size:12px;color:var(--muted);margin-top:8px">After paying, <a href="https://calendly.com/prixieroxanbooc/30min" target="_blank" rel="noopener">message me</a> with your receipt to receive the snippet.</div>
         </div>
         <div style="position:relative;margin-top:16px">
           <div class="codeblock" style="filter:blur(5px);user-select:none;pointer-events:none;max-height:140px;overflow:hidden">&lt;script&gt;
@@ -108,6 +109,19 @@
 
 <script>
 const WIDGET_URL = 'https://prixieroxanbooc.github.io/portfolio/faq-widget.js';
+
+// ▼▼▼ PAYWALL — paste YOUR Wise payment link here (the only line you edit) ▼▼▼
+const PAYMENT_LINK = 'https://wise.com/pay/me/REPLACE-ME';
+// ▲▲▲ get yours in the Wise app: Recipients/Request → "Get your wise.com/pay link" ▲▲▲
+(function setupPay(){
+  const enc = encodeURIComponent(PAYMENT_LINK);
+  const qr = document.getElementById('qr');
+  qr.src = 'https://api.qrserver.com/v1/create-qr-code/?size=240x240&margin=10&data=' + enc;
+  qr.onerror = function(){ qr.replaceWith(Object.assign(document.createElement('div'),{textContent:'Open: '+PAYMENT_LINK, style:'word-break:break-all;color:#4A5568;font-size:12px'})); };
+  document.getElementById('qrlink').href = PAYMENT_LINK;
+  document.getElementById('paybtn').href = PAYMENT_LINK;
+})();
+
 let logoDataUrl = null;
 
 // ---- format <-> config ----
