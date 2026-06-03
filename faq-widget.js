@@ -81,12 +81,28 @@
     if (html != null) e.innerHTML = html;
     return e;
   }
-  // safe multi-line text → fragment with <br>
+  // safe multi-line text → fragment with <br>, auto-linking URLs & emails
+  const LINK_RE = /(https?:\/\/[^\s]+|www\.[^\s]+|[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,})/g;
+  function appendLinked(parent, line) {
+    let last = 0, m; LINK_RE.lastIndex = 0;
+    while ((m = LINK_RE.exec(line))) {
+      if (m.index > last) parent.appendChild(document.createTextNode(line.slice(last, m.index)));
+      const tok = m[0];
+      const isEmail = tok.indexOf('@') > -1 && !/^(https?:|www\.)/.test(tok);
+      const a = document.createElement('a');
+      a.href = isEmail ? 'mailto:' + tok : (/^https?:/.test(tok) ? tok : 'https://' + tok);
+      a.textContent = tok; a.target = '_blank'; a.rel = 'noopener';
+      a.style.color = 'inherit'; a.style.textDecoration = 'underline';
+      parent.appendChild(a);
+      last = m.index + tok.length;
+    }
+    if (last < line.length) parent.appendChild(document.createTextNode(line.slice(last)));
+  }
   function textFrag(str) {
     const frag = document.createDocumentFragment();
     String(str).split('\n').forEach((line, i) => {
       if (i) frag.appendChild(document.createElement('br'));
-      frag.appendChild(document.createTextNode(line));
+      appendLinked(frag, line);
     });
     return frag;
   }
