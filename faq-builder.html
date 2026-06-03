@@ -75,16 +75,15 @@
         <p style="color:var(--muted);font-size:13px;margin:0 0 12px">The live preview is free to try. The ready-to-paste embed snippet is a paid feature. Easiest way: <b>buy via Telegram</b> — pay, send your receipt, and the bot delivers your code automatically once approved.</p>
 
         <div style="background:var(--blue-soft);border-radius:10px;padding:12px;margin-bottom:14px">
-          <div style="font-weight:600;font-size:13px;margin-bottom:4px">🔑 Step A — copy your config code</div>
-          <div style="font-size:12px;color:var(--muted);margin-bottom:8px">Send this to the Telegram bot so your snippet comes with <b>your exact</b> brand, color &amp; FAQs. (Tip: host your logo and use a logo URL so it's included.)</div>
-          <textarea id="cfgcode" readonly style="width:100%;height:58px;font-family:var(--font-mono);font-size:11px;border:1px solid var(--border);border-radius:8px;padding:8px;word-break:break-all"></textarea>
-          <button class="btn btn-ghost btn-sm" style="margin-top:8px" onclick="copyCfg()">📋 Copy config code</button>
+          <div style="font-weight:600;font-size:13px;margin-bottom:4px">📥 Step A — download your config</div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:10px">Once you're happy with the preview, download your config file. You'll <b>upload this file to the Telegram bot</b> — the bot will ask for it — so your snippet comes with <b>your exact</b> brand, color &amp; FAQs. (Logo is included only if it's a URL.)</div>
+          <button class="btn btn-primary btn-sm" onclick="downloadCfg()">⬇ Download config (.json)</button>
           <span id="cfgcopied" style="margin-left:8px;color:var(--success);font-size:12px"></span>
         </div>
 
-        <div style="font-weight:600;font-size:13px;margin-bottom:6px">💬 Step B — buy &amp; send the code</div>
+        <div style="font-weight:600;font-size:13px;margin-bottom:6px">💬 Step B — buy &amp; upload the file</div>
         <a class="btn btn-primary btn-sm" style="margin-bottom:14px" href="https://t.me/LaRoux_paywall_bot?start=buy" target="_blank" rel="noopener">💬 Buy via Telegram →</a>
-        <p style="color:var(--muted);font-size:12.5px;margin:0 0 12px">…or pay directly with the QR below and message me your receipt:</p>
+        <p style="color:var(--muted);font-size:12.5px;margin:0 0 12px">The bot will ask you to <b>upload your <code>faq-config.json</code></b>, then pay &amp; send your receipt. Or pay directly with the QR below:</p>
         <div style="text-align:center;font-weight:600;margin:4px 0 2px">Scan to pay · Prixie Roxan</div>
         <div style="display:flex;gap:18px;justify-content:center;flex-wrap:wrap;margin:10px 0 2px">
           <div style="text-align:center">
@@ -171,23 +170,22 @@ function apply(){
   window.NovaFAQWidget.init(cfg);
   document.getElementById('status').textContent='Preview updated ✓ (bottom-right)';
   setTimeout(()=>document.getElementById('status').textContent='',2500);
-  renderCfgCode(cfg);
 }
-// The buyer copies this compact "config code" and sends it to the Telegram bot,
+// The buyer downloads this config (.json) and UPLOADS it to the Telegram bot,
 // which returns an embed snippet built from THEIR exact config (brand/color/FAQs).
-// (Logo travels only if it's a URL — data-URL logos are omitted to keep the code small.)
-function makeConfigCode(cfg){
+// (Logo travels only if it's a URL — data-URL logos are omitted to keep it portable.)
+function slimConfig(cfg){
   const slim = { brand:cfg.brand, tagline:cfg.tagline, accent:cfg.accent, greeting:cfg.greeting, categories:cfg.categories };
   if (cfg.logo && /^https?:/i.test(cfg.logo)) slim.logo = cfg.logo;
-  return btoa(unescape(encodeURIComponent(JSON.stringify(slim))));
+  return slim;
 }
-function renderCfgCode(cfg){ const t=document.getElementById('cfgcode'); if(t) t.value = makeConfigCode(cfg); }
-function copyCfg(){
-  const t=document.getElementById('cfgcode');
-  navigator.clipboard.writeText(t.value).then(()=>{
-    document.getElementById('cfgcopied').textContent='Copied! ✓';
-    setTimeout(()=>document.getElementById('cfgcopied').textContent='',2000);
-  });
+function downloadCfg(){
+  const cfg = currentConfig();
+  if(!cfg.categories.length){ const s=document.getElementById('cfgcopied'); if(s){s.textContent='Add some FAQs first';setTimeout(()=>s.textContent='',2500);} return; }
+  const blob = new Blob([JSON.stringify(slimConfig(cfg), null, 2)], {type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='faq-config.json';
+  document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href); a.remove();},1500);
+  const s=document.getElementById('cfgcopied'); if(s){ s.textContent='Downloaded ✓ — upload this file to the bot'; setTimeout(()=>s.textContent='',4000); }
 }
 function loadSample(){
   document.getElementById('brand').value = window.NovaFAQWidget.default.brand;
