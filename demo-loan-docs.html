@@ -17,16 +17,16 @@
 
 <nav class="nav">
   <div class="wrap">
-    <div class="brand"><span class="mark">PR</span> Prixie&nbsp;Roxan</div>
+    <div class="brand"><span class="mark">N</span> NovaBank</div>
     <div class="nav-links"><a href="https://larouxantech.com/">Portfolio</a><a href="demo-spreadsheet-filter.html">Filter demo</a><a href="demo-dashboard.html">Dashboard demo</a></div>
   </div>
 </nav>
 
 <header class="demo-head">
   <div class="wrap">
-    <div class="tag">Document automation service</div>
-    <h1>Loan Document Generator</h1>
-    <p>A REST microservice that fills Word (DOCX) templates from a JSON payload — two document bundles, 54 fields total. It is a <strong>pure templater</strong>: it inserts caller-supplied values verbatim and performs no financial computation, so legal/finance review stays in control. Fill the form to see the request it would send and a rendered preview.</p>
+    <div class="tag">NovaBank · Document automation</div>
+    <h1>NovaBank Loan Document Generator</h1>
+    <p>NovaBank's loan-document service — a REST microservice that fills Word (DOCX) templates from a JSON payload to produce the <strong>Nova Auto Loan</strong> and <strong>Nova Flex Loan</strong> bundles (54 fields total). It is a <strong>pure templater</strong>: it inserts caller-supplied values verbatim and performs no financial computation, so legal/finance review stays in control. Fill the form to see the request and a rendered preview, then download the document.</p>
   </div>
 </header>
 
@@ -110,12 +110,17 @@ function render(){
   <span class="k">"termMonths"</span>: <span class="s">"${esc(term)}"</span>,
   <span class="c">// …${bundle==='vehicle'?20:26} more fields, all caller-supplied</span>
 }`;
+  const product = bundle==='vehicle' ? 'Nova Auto Loan' : 'Nova Flex Loan';
   document.getElementById('doc').innerHTML =
-`<div style="text-align:center;font-weight:bold;letter-spacing:.05em">${bundle==='vehicle'?'VEHICLE':'PARTNER'} LOAN AGREEMENT</div>
+`<div style="text-align:center">
+  <div style="font-family:Poppins,sans-serif;font-weight:700;color:#0047AB;font-size:22px">NovaBank</div>
+  <div style="color:#8A93A3;font-size:12px;font-style:italic">Banking Built Around You</div>
+</div>
+<div style="text-align:center;font-weight:bold;letter-spacing:.05em;margin-top:14px">LOAN AGREEMENT — ${product.toUpperCase()}</div>
 <hr style="margin:16px 0">
-<p>This Agreement is entered into by and between the Lender and <b>${esc(name)}</b> ("Borrower").</p>
+<p>This Agreement is entered into by and between <b>NovaBank</b> (the "Lender") and <b>${esc(name)}</b> (the "Borrower").</p>
 <p>The Borrower acknowledges a loan in the principal amount of <b>₱${esc(amount)}</b>
-(<i>${esc(words)}</i>), payable over a term of <b>${esc(term)} months</b>.</p>
+(<i>${esc(words)}</i>), payable over a term of <b>${esc(term)} months</b> under the ${product} program.</p>
 <p style="color:#888">…remaining clauses populated from the template's {{placeholders}}.</p>`;
 }
 function tab(n){
