@@ -90,9 +90,11 @@
           <p style="color:var(--muted);font-size:13px;margin:0 0 10px">Paste this just before <span class="mono">&lt;/body&gt;</span> on any page. Re-customize and re-copy as often as you like.</p>
           <div style="display:flex;gap:8px;flex-wrap:wrap">
             <button class="btn btn-primary btn-sm" onclick="copyEmbed()">📋 Copy embed code</button>
+            <button class="btn btn-ghost btn-sm" onclick="saveToTxn()">💾 Save changes to my TXN</button>
             <button class="btn btn-ghost btn-sm" onclick="downloadCfg()">⬇ Download config (.json)</button>
             <span id="embcopied" style="color:var(--success);font-size:12px;align-self:center"></span>
           </div>
+          <div style="font-size:11.5px;color:var(--muted);margin-top:6px">Edited your FAQs/brand? Tap <b>Save changes to my TXN</b> — next time you open your link, it loads the updated version.</div>
           <div class="codeblock" id="embedout" style="margin-top:12px;max-height:340px;overflow:auto;white-space:pre-wrap;word-break:break-all"></div>
         </div>
 
@@ -271,6 +273,20 @@ function copyEmbed(){
   navigator.clipboard.writeText(document.getElementById('embedout').textContent).then(()=>{
     const s=document.getElementById('embcopied'); s.textContent='Copied! ✓'; setTimeout(()=>s.textContent='',2000);
   });
+}
+// save the current builder config back to the buyer's TXN row in the sheet
+function saveToTxn(){
+  const s=document.getElementById('embcopied');
+  if(!isLicensed()){ if(s){ s.textContent='Unlock with your TXN first'; setTimeout(()=>s.textContent='',2500);} return; }
+  if(!SHEET_VERIFY_URL){ if(s){ s.textContent='No backend configured'; setTimeout(()=>s.textContent='',2500);} return; }
+  let cfg = slimConfig(currentConfig());
+  let cfgStr = JSON.stringify(cfg);
+  if(cfgStr.length > 45000 && cfg.logo){ delete cfg.logo; cfgStr = JSON.stringify(cfg); }   // keep within a sheet cell
+  if(s) s.textContent='Saving…';
+  fetch(SHEET_VERIFY_URL, { method:'POST', mode:'no-cors', headers:{'content-type':'text/plain;charset=utf-8'},
+    body: JSON.stringify({ action:'update', txn: licensedCode, config: cfgStr }) })
+    .then(()=>{ if(s){ s.textContent='Saved to your TXN ✓'; setTimeout(()=>s.textContent='',3000);} })
+    .catch(()=>{ if(s){ s.textContent='Save failed — try again'; setTimeout(()=>s.textContent='',3000);} });
 }
 // The buyer downloads this config (.json) and UPLOADS it to the Telegram bot,
 // which returns an embed snippet built from THEIR exact config (brand/logo/color/FAQs).
