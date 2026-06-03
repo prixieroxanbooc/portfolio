@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Inter:wght@400;500;600&family=Public+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
+<script src="mock-mcp.js"></script>
 <style>
   .info-wrap{position:relative;display:inline-block}
   .info-btn{width:17px;height:17px;border-radius:50%;border:none;background:var(--blue);color:#fff;font-size:11px;font-weight:700;cursor:pointer;line-height:17px;padding:0;margin-left:5px;font-style:normal;vertical-align:middle}
@@ -19,7 +20,7 @@
 </head>
 <body>
 
-<div class="demo-banner">Interactive demo — simulated tool calls, no real accounts connected. <a href="https://larouxantech.com/">← Back to portfolio</a></div>
+<div class="demo-banner">Interactive demo — real MCP JSON-RPC, run in your browser on fabricated data (no real accounts). <a href="https://larouxantech.com/">← Back to portfolio</a></div>
 
 <nav class="nav">
   <div class="wrap">
@@ -61,8 +62,8 @@
               <ol style="margin:8px 0 0;padding-left:18px">
                 <li>Type your Google email — it acts as your <span class="mono">x-api-key</span> identity.</li>
                 <li>Pick a service (Gmail, Docs, Sheets, Slides).</li>
-                <li>Click <b>Run sample</b> to see a personalized result.</li>
-                <li>Click <b>Email me</b> to receive the sample in your inbox.</li>
+                <li>Click <b>Run sample</b> — the client sends a real <span class="mono">tools/call</span> and shows the JSON-RPC.</li>
+                <li>Click <b>List tools</b> to see the server's <span class="mono">tools/list</span> schema.</li>
               </ol>
               <div style="margin-top:8px;color:var(--muted)">This is a simulation — no real Google account is connected and nothing is stored.</div>
             </span>
@@ -82,9 +83,9 @@
     </div>
 
     <div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap">
-      <button class="btn btn-primary" onclick="runG()">Run sample →</button>
-      <button class="btn btn-ghost" onclick="emailG()">✉ Email me this sample</button>
-      <button class="btn btn-ghost" onclick="dlG()">⬇ Download (.json)</button>
+      <button class="btn btn-primary" onclick="runG()">Run sample (tools/call) →</button>
+      <button class="btn btn-ghost" onclick="listToolsG()">List tools (tools/list)</button>
+      <button class="btn btn-ghost" onclick="dlG()">⬇ Download exchange (.json)</button>
     </div>
     <div class="codeblock" id="gout" style="margin-top:16px;display:none"></div>
     <div class="note" id="gnote" style="display:none"></div>
@@ -142,96 +143,70 @@ function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').rep
 function validEmail(s){ return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(s); }
 function svcLabel(){ return document.getElementById('svc').selectedOptions[0].text; }
 
-function sampleFor(email, svc){
-  const who = email || 'you@gmail.com';
-  const handle = who.split('@')[0];
-  if(svc==='gmail') return { tool:'gmail.search_messages', identity:who, query:'is:unread',
-    matches:3, messages:[
-      {from:'billing@vendor.example', subject:'Your March statement is ready'},
-      {from:'team@novabank.example',  subject:'Welcome to NovaBank, '+handle+'!'},
-      {from:'calendar@workspace.example', subject:'Reminder: product demo at 3:00 PM'} ] };
-  if(svc==='docs') return { tool:'docs.create_document', identity:who, ok:true,
-    documentId:'1Demo'+handle.slice(0,4)+'XYZ', title:handle+' — Meeting Notes (demo)',
-    url:'https://docs.google.com/document/d/1Demo'+handle.slice(0,4)+'XYZ/edit' };
-  if(svc==='sheets') return { tool:'sheets.append_row', identity:who, ok:true,
-    spreadsheet:handle+'-recon-demo', updatedRange:'Sheet1!A42:D42', appended:1,
-    values:[[new Date().toISOString().slice(0,10), 'NovaBank', 'SETTLED', 1850.00]] };
-  return { tool:'slides.create_presentation', identity:who, ok:true,
-    presentationId:'1Deck'+handle.slice(0,4), title:handle+' — Quarterly Review (demo)', slides:5,
-    url:'https://docs.google.com/presentation/d/1Deck'+handle.slice(0,4)+'/edit' };
+let lastExchange = null;
+function fmtExchange(topComment, request, response){
+  return `<span class="c">${topComment}</span>\n` +
+    `<span class="c">// → request</span>\n` + esc(JSON.stringify(request, null, 2)) + `\n\n` +
+    `<span class="c">// ← response</span>\n` + esc(JSON.stringify(response, null, 2));
 }
-
-let lastSample = null;
 function resetG(){
   document.getElementById('gout').style.display='none';
   document.getElementById('gnote').style.display='none';
-  lastSample = null;
+  lastExchange = null;
 }
 function runG(){
   const email=document.getElementById('gmail').value.trim();
   const svc=document.getElementById('svc').value;
-  const out=document.getElementById('gout');
-  if(!validEmail(email)){ out.style.display='block'; out.innerHTML='<span class="c">// enter a valid Google email above — it acts as your key</span>'; return; }
-  lastSample = sampleFor(email, svc);
-  out.style.display='block';
-  out.innerHTML = `<span class="c">// identity resolved → ${esc(email)}  ·  ${esc(svcLabel())}</span>\n` +
-    esc(JSON.stringify(lastSample, null, 2));
-  document.getElementById('gnote').style.display='none';
-}
-function emailG(){
-  const email=document.getElementById('gmail').value.trim();
-  if(!validEmail(email)){ alert('Enter your Google email first — it acts as your key.'); return; }
-  if(!lastSample) runG();
-  const svc=document.getElementById('svc').value;
-  const subject = 'Your NovaBank MCP demo sample — '+svc;
-  const body =
-`Hi ${email},
-
-Here is your demo sample from the ${svcLabel()} MCP server.
-This is a simulation for a portfolio demo — no real Google data was accessed.
-
-${JSON.stringify(lastSample, null, 2)}
-
-— Generated by the MCP Chat Client demo`;
-  window.location.href = 'mailto:'+encodeURIComponent(email)+'?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body);
+  const out=document.getElementById('gout'); out.style.display='block';
+  if(!validEmail(email)){ out.innerHTML='<span class="c">// enter a valid Google email above — it is sent as the x-api-key identity</span>'; lastExchange=null; document.getElementById('gnote').style.display='none'; return; }
+  const tool = MockMCP.primaryTool(svc);
+  const args = MockMCP.sampleArgs(svc, email);
+  const request = MockMCP.rpcRequest('tools/call', { name: tool, arguments: args });
+  const result = MockMCP.callTool(tool, args, email);
+  const response = MockMCP.rpcResponse(request.id, result);
+  lastExchange = { transport:'streamable-http', headers:{ 'x-api-key': email }, request, response };
+  out.innerHTML = fmtExchange(`// POST /mcp   x-api-key: ${esc(email)}   (your email = your key)`, request, response);
   const n=document.getElementById('gnote'); n.style.display='block';
-  n.innerHTML='✉ Opening your email app addressed to <b>'+esc(email)+'</b> — review and hit send to receive your sample. (In production this is sent automatically via the Gmail tool.)';
+  n.innerHTML = result.isError
+    ? '🛡️ Blocked by the safe-defaults policy — destructive tools are off by default.'
+    : '✅ <span class="mono">'+esc(tool)+'</span> executed as <b>'+esc(email)+'</b> — simulated in-browser, fabricated data.';
+}
+function listToolsG(){
+  const svc=document.getElementById('svc').value;
+  const email=document.getElementById('gmail').value.trim() || 'you@gmail.com';
+  const out=document.getElementById('gout'); out.style.display='block';
+  const request = MockMCP.rpcRequest('tools/list', {});
+  const response = MockMCP.rpcResponse(request.id, { tools: MockMCP.TOOLS[svc] });
+  lastExchange = { headers:{ 'x-api-key': email }, request, response };
+  out.innerHTML = fmtExchange(`// POST /mcp   x-api-key: ${esc(email)}`, request, response);
+  const cnt = MockMCP.COUNTS[svc];
+  const n=document.getElementById('gnote'); n.style.display='block';
+  n.innerHTML = 'Showing a representative subset — the real '+svc+' server exposes '+(typeof cnt==='number'? cnt+' tools':'its full toolset')+'.';
 }
 function dlG(){
-  const email=document.getElementById('gmail').value.trim();
-  if(!validEmail(email)){ alert('Enter your Google email first.'); return; }
-  if(!lastSample) runG();
-  const blob=new Blob([JSON.stringify({note:'DEMO — simulated MCP result, sample data only', sample:lastSample},null,2)],{type:'application/json'});
+  if(!lastExchange){ alert('Run a sample or list tools first.'); return; }
+  const blob=new Blob([JSON.stringify({ note:'DEMO — in-browser MCP JSON-RPC exchange, fabricated data', ...lastExchange }, null, 2)],{type:'application/json'});
   const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
-  a.download='mcp-sample-'+document.getElementById('svc').value+'-demo.json'; document.body.appendChild(a); a.click();
+  a.download='mcp-exchange-'+document.getElementById('svc').value+'-demo.json'; document.body.appendChild(a); a.click();
   setTimeout(()=>{URL.revokeObjectURL(a.href); a.remove();},1500);
 }
 
 function reset(){ document.getElementById('out').innerHTML='// response appears here'; }
 function callTool(){
-  const t=document.getElementById('tool').value;
-  const out=document.getElementById('out');
-  if(t==='search'){
-    out.innerHTML=`<span class="c">// identity resolved → user@example.com</span>
-{
-  <span class="k">"matches"</span>: 3,
-  <span class="k">"messages"</span>: [
-    { <span class="k">"from"</span>:<span class="s">"billing@vendor.example"</span>, <span class="k">"subject"</span>:<span class="s">"March statement"</span> },
-    { <span class="k">"from"</span>:<span class="s">"ops@example.com"</span>, <span class="k">"subject"</span>:<span class="s">"Recon summary"</span> }
-  ]
-}`;
-  } else if(t==='append'){
-    out.innerHTML=`<span class="c">// identity resolved → user@example.com</span>
-{ <span class="k">"ok"</span>:true, <span class="k">"updatedRange"</span>:<span class="s">"Sheet1!A42:D42"</span>,
-  <span class="k">"appended"</span>:1 }`;
-  } else {
-    out.innerHTML=`<span class="c">// 🛡️ blocked by safe-defaults policy</span>
-{
-  <span class="k">"error"</span>: <span class="s">"tool_disabled"</span>,
-  <span class="k">"reason"</span>: <span class="s">"destructive tool off by default"</span>,
-  <span class="k">"hint"</span>: <span class="s">"enable per-profile in admin panel"</span>
-}`;
-  }
+  const sel=document.getElementById('tool').value;
+  const map={
+    search:{ name:'gmail.search_messages', args:{ query:'subject:statement', maxResults:5 } },
+    append:{ name:'sheets.append_row',     args:{ spreadsheetId:'1Recon', range:'Sheet1!A:D', values:[['2025-03-26','NovaBank','SETTLED',1850.00]] } },
+    delete:{ name:'drive.delete_file',     args:{ fileId:'demo123' } },
+  };
+  const m=map[sel];
+  const request = MockMCP.rpcRequest('tools/call', { name:m.name, arguments:m.args });
+  const result = MockMCP.callTool(m.name, m.args, 'user@example.com');
+  const response = MockMCP.rpcResponse(request.id, result);
+  const top = result.isError ? '// 🛡️ destructive tool blocked by safe-defaults policy' : '// POST /mcp  x-api-key: user@example.com';
+  document.getElementById('out').innerHTML =
+    `<span class="c">${top}</span>\n<span class="c">// → request</span>\n`+esc(JSON.stringify(request,null,2))+
+    `\n\n<span class="c">// ← response</span>\n`+esc(JSON.stringify(response,null,2));
 }
 function dlTranscript(){
   const t = document.getElementById('tool').value;
