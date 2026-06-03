@@ -110,9 +110,13 @@
 
   function styles(accent) {
     return `
-      :host { all: initial; }
+      :host { all: initial; cursor: auto; }
       *, *::before, *::after { box-sizing: border-box; }
       .root { font-family: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif; }
+      /* keep a normal cursor inside the widget even if the host page hides it (e.g. custom cursor) */
+      .root, .panel, .head, .body, .bubble, .label, .empty, .foot, .chips { cursor: auto; }
+      .fab, .chip, .qbtn, .back, .x { cursor: pointer; }
+      .search { cursor: text; }
       .fab {
         position: fixed; bottom: 22px; right: 22px; width: 60px; height: 60px;
         border-radius: 50%; border: none; cursor: pointer; z-index: 2147483000;
