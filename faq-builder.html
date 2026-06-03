@@ -212,7 +212,7 @@ function validTxn(code){
 function isLicensed(){ try { return validTxn(localStorage.getItem(LICENSE_KEY)||''); } catch(e){ return false; } }
 // Set to your Apps Script /exec URL to verify transaction numbers against the Google Sheet.
 // Leave blank to fall back to local checksum-only validation.
-const SHEET_VERIFY_URL = '';
+const SHEET_VERIFY_URL = 'https://script.google.com/macros/s/AKfycbww5au6GtF5rnvc7jLCskzHcQO4ICEYwrx8G0IZhpf7Cdq7mUH9pw2l-SKwUIN6hzdK/exec';
 function verifyTxnServer(code){
   return new Promise(resolve=>{
     if(!SHEET_VERIFY_URL){ resolve(validTxn(code)); return; }   // no backend yet → checksum only
