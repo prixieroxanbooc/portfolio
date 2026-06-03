@@ -213,18 +213,30 @@ function isLicensed(){ return validTxn(licensedCode); }
 // Set to your Apps Script /exec URL to verify transaction numbers against the Google Sheet.
 // Leave blank to fall back to local checksum-only validation.
 const SHEET_VERIFY_URL = 'https://script.google.com/macros/s/AKfycbww5au6GtF5rnvc7jLCskzHcQO4ICEYwrx8G0IZhpf7Cdq7mUH9pw2l-SKwUIN6hzdK/exec';
+// returns Promise<{valid, brand?, config?}>
 function verifyTxnServer(code){
   return new Promise(resolve=>{
-    if(!SHEET_VERIFY_URL){ resolve(validTxn(code)); return; }   // no backend yet → checksum only
+    if(!SHEET_VERIFY_URL){ resolve(validTxn(code) ? {valid:true} : {valid:false}); return; }
     const cb='cb_'+Math.floor(Math.random()*1e9);
     const s=document.createElement('script'); let done=false;
     function cleanup(){ try{ delete window[cb]; }catch(e){ window[cb]=undefined; } if(s.parentNode) s.remove(); }
-    window[cb]=(res)=>{ if(done) return; done=true; resolve(!!(res&&res.valid)); cleanup(); };
-    s.onerror=()=>{ if(done) return; done=true; resolve(false); cleanup(); };
-    setTimeout(()=>{ if(done) return; done=true; resolve(false); cleanup(); }, 8000);
+    window[cb]=(res)=>{ if(done) return; done=true; resolve(res||{valid:false}); cleanup(); };
+    s.onerror=()=>{ if(done) return; done=true; resolve({valid:false}); cleanup(); };
+    setTimeout(()=>{ if(done) return; done=true; resolve({valid:false}); cleanup(); }, 8000);
     s.src=SHEET_VERIFY_URL+(SHEET_VERIFY_URL.indexOf('?')>-1?'&':'?')+'txn='+encodeURIComponent(code)+'&callback='+cb;
     document.body.appendChild(s);
   });
+}
+// load a saved config into the builder fields (so the embed code reflects the buyer's exact setup)
+function loadConfigIntoBuilder(cfg){
+  if(!cfg) return;
+  if(cfg.brand!=null)    document.getElementById('brand').value = cfg.brand;
+  if(cfg.tagline!=null)  document.getElementById('tagline').value = cfg.tagline;
+  if(cfg.greeting!=null) document.getElementById('greeting').value = cfg.greeting;
+  if(cfg.accent)         document.getElementById('accent').value = cfg.accent;
+  logoDataUrl = cfg.logo || null;
+  if(Array.isArray(cfg.categories)) document.getElementById('faqs').value = serialize(cfg);
+  apply();
 }
 function buildEmbed(cfg){
   return '<!-- Floating FAQ chatbot — paste just before </body> -->\n<script>\n  window.NovaFAQ = ' +
@@ -240,15 +252,21 @@ function applyLicense(){
   document.getElementById('txnmsg').innerHTML='<span style="color:var(--success)">✓ Unlocked with '+code+'</span>';
   refreshEmbed();
 }
-async function unlockTxn(){
-  const code=(document.getElementById('txninput').value||'').trim().toUpperCase();
+async function applyTxn(code){
+  code=(code||'').trim().toUpperCase();
   const msg=document.getElementById('txnmsg');
-  if(!validTxn(code)){ msg.innerHTML='<span style="color:var(--danger)">Invalid format — use the TXN-… number the Telegram bot gave you.</span>'; return; }
+  document.getElementById('txninput').value=code;
+  if(!validTxn(code)){ msg.innerHTML='<span style="color:var(--danger)">Invalid format — use the TXN-… number the Telegram bot gave you.</span>'; return false; }
   msg.innerHTML='Verifying…';
-  const ok = await verifyTxnServer(code);
-  if(ok){ licensedCode = code; applyLicense(); }
-  else { msg.innerHTML='<span style="color:var(--danger)">Transaction number not found. You get one after purchasing via the Telegram bot.</span>'; }
+  const res = await verifyTxnServer(code);
+  if(res && res.valid){
+    if(res.config){ try{ loadConfigIntoBuilder(typeof res.config==='string' ? JSON.parse(res.config) : res.config); }catch(e){} }
+    licensedCode = code; applyLicense(); return true;
+  }
+  msg.innerHTML='<span style="color:var(--danger)">Transaction number not found. You get one after purchasing via the Telegram bot.</span>';
+  return false;
 }
+function unlockTxn(){ applyTxn(document.getElementById('txninput').value); }
 function copyEmbed(){
   navigator.clipboard.writeText(document.getElementById('embedout').textContent).then(()=>{
     const s=document.getElementById('embcopied'); s.textContent='Copied! ✓'; setTimeout(()=>s.textContent='',2000);
@@ -290,6 +308,11 @@ document.getElementById('logofile').addEventListener('change', e => {
 
 // boot with the sample — always starts LOCKED; unlock is per-session (cleared on refresh)
 loadSample();
+// if opened via the bot's copy link (?txn=...), auto-load that buyer's config + unlock
+try {
+  const urlTxn = new URLSearchParams(location.search).get('txn');
+  if (urlTxn) applyTxn(urlTxn);
+} catch(e) {}
 </script>
 </body>
 </html>
