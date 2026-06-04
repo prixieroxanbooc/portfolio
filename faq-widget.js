@@ -136,6 +136,9 @@
       .fab.fab-chat { width: 60px; height: 60px; border-radius: 50%; background: ${accent}; color: #fff;
         box-shadow: 0 10px 28px -8px rgba(0,0,0,.4); filter: none; display: grid; place-items: center; }
       .fab.fab-chat svg { width: 28px; height: 28px; animation: none; }
+      /* logo chat-bubble launcher (cfg.launcher: 'logo') */
+      .fab.fab-bubble { width: 68px; height: 68px; }
+      .fab.fab-bubble svg { transform-origin: 50% 55%; }
       .panel {
         position: fixed; bottom: 114px; right: 18px; width: 374px; max-width: calc(100vw - 32px);
         height: 560px; max-height: calc(100vh - 130px); z-index: 2147483000;
@@ -186,6 +189,22 @@
     const p = h => { h = String(h).replace('#', ''); if (h.length === 3) h = h.split('').map(c => c + c).join(''); return [0, 2, 4].map(i => parseInt(h.slice(i, i + 2), 16)); };
     const A = p(c1), B = p(c2);
     return '#' + A.map((v, i) => Math.round(v + (B[i] - v) * t).toString(16).padStart(2, '0')).join('');
+  }
+
+  // A chat-bubble launcher whose face IS the brand logo (or initial / chat dots if none).
+  function logoBubbleMarkup(cfg) {
+    const a = cfg.accent || '#0047AB';
+    const useLogo = cfg.showLogoInLauncher !== false && !!cfg.logo;
+    const inner = useLogo
+      ? `<image href="${escapeHtml(cfg.logo)}" xlink:href="${escapeHtml(cfg.logo)}" x="17" y="11" width="30" height="30" preserveAspectRatio="xMidYMid slice" clip-path="url(#nfq-bub-clip)"/>`
+      : `<text x="32" y="32" text-anchor="middle" dominant-baseline="central" font-family="Inter, system-ui, sans-serif" font-size="18" font-weight="700" fill="${a}">${escapeHtml(initials(cfg.brand))}</text>`;
+    return `<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" aria-hidden="true">
+      <defs><clipPath id="nfq-bub-clip"><circle cx="32" cy="26" r="15"/></clipPath></defs>
+      <path d="M20 6 H44 Q56 6 56 18 V34 Q56 46 44 46 H30 L16 58 L21 46 H20 Q8 46 8 34 V18 Q8 6 20 6 Z"
+            fill="#ffffff" stroke="${a}" stroke-width="3" stroke-linejoin="round"/>
+      <circle cx="32" cy="26" r="15" fill="#ffffff"/>
+      ${inner}
+    </svg>`;
   }
 
   // A friendly mascot bot sitting in a disc, holding the brand logo up in a glowing badge.
@@ -257,10 +276,12 @@
     const wrap = el('div', { class: 'root' });
     root.appendChild(wrap);
 
-    // launcher — robot cradling the logo (default), or classic chat bubble
-    const isChat = cfg.launcher === 'chat';
-    const fab = el('button', { class: 'fab' + (isChat ? ' fab-chat' : ' fab-robot'), 'aria-label': 'Open help' },
-      isChat ? ICON_CHAT : robotMarkup(cfg));
+    // launcher — robot mascot (default), logo chat-bubble, or classic chat bubble
+    let fabClass, fabHtml;
+    if (cfg.launcher === 'chat')      { fabClass = ' fab-chat';   fabHtml = ICON_CHAT; }
+    else if (cfg.launcher === 'logo') { fabClass = ' fab-bubble'; fabHtml = logoBubbleMarkup(cfg); }
+    else                              { fabClass = ' fab-robot';  fabHtml = robotMarkup(cfg); }
+    const fab = el('button', { class: 'fab' + fabClass, 'aria-label': 'Open help' }, fabHtml);
     wrap.appendChild(fab);
 
     // panel
