@@ -123,7 +123,7 @@
       .cta-mini { margin-left: 6px; text-decoration: none; opacity: .4; font-size: 12px; transition: opacity .15s; }
       .cta-mini:hover { opacity: 1; }
       .fab {
-        position: fixed; bottom: 14px; right: 14px; width: 96px; height: 104px;
+        position: fixed; bottom: 14px; right: 14px; width: 90px; height: 90px;
         border: none; padding: 0; background: transparent; cursor: pointer; z-index: 2147483000;
         filter: drop-shadow(0 14px 20px rgba(10,20,50,.30));
         transition: transform .18s ease;
@@ -137,7 +137,7 @@
         box-shadow: 0 10px 28px -8px rgba(0,0,0,.4); filter: none; display: grid; place-items: center; }
       .fab.fab-chat svg { width: 28px; height: 28px; animation: none; }
       .panel {
-        position: fixed; bottom: 126px; right: 18px; width: 374px; max-width: calc(100vw - 32px);
+        position: fixed; bottom: 114px; right: 18px; width: 374px; max-width: calc(100vw - 32px);
         height: 560px; max-height: calc(100vh - 130px); z-index: 2147483000;
         background: #fff; border-radius: 18px; overflow: hidden; display: flex; flex-direction: column;
         box-shadow: 0 24px 60px -20px rgba(10,20,50,.45); border: 1px solid #e6eaf2;
@@ -197,50 +197,45 @@
     const EDGE = '#cfd8e6';
     const useLogo = cfg.showLogoInLauncher !== false && !!cfg.logo;
     const held = useLogo
-      ? `<image href="${escapeHtml(cfg.logo)}" xlink:href="${escapeHtml(cfg.logo)}" x="34.5" y="34.5" width="41" height="41" preserveAspectRatio="xMidYMid slice" clip-path="url(#nfq-badge-clip)"/>`
-      : `<text x="55" y="64" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-size="24" font-weight="700" fill="${deep}">${escapeHtml(initials(cfg.brand))}</text>`;
-    return `<svg viewBox="0 0 200 216" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" aria-hidden="true">
+      ? `<image href="${escapeHtml(cfg.logo)}" xlink:href="${escapeHtml(cfg.logo)}" x="36" y="33" width="56" height="56" preserveAspectRatio="xMidYMid slice" clip-path="url(#nfq-badge-clip)"/>`
+      : `<text x="64" y="71" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-size="32" font-weight="700" fill="${deep}">${escapeHtml(initials(cfg.brand))}</text>`;
+    return `<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" aria-hidden="true">
       <defs>
         <linearGradient id="nfq-shell" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#dbe3ef"/></linearGradient>
         <radialGradient id="nfq-disc" cx="40%" cy="28%" r="85%"><stop offset="0" stop-color="${deep2}"/><stop offset="1" stop-color="${deep}"/></radialGradient>
         <filter id="nfq-glow" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="2.2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
-        <filter id="nfq-halo" x="-90%" y="-90%" width="280%" height="280%"><feGaussianBlur stdDeviation="6"/></filter>
-        <clipPath id="nfq-badge-clip"><circle cx="55" cy="55" r="20.5"/></clipPath>
+        <filter id="nfq-halo" x="-90%" y="-90%" width="280%" height="280%"><feGaussianBlur stdDeviation="7"/></filter>
+        <clipPath id="nfq-badge-clip"><circle cx="64" cy="61" r="26.5"/></clipPath>
+        <clipPath id="nfq-disc-clip"><circle cx="116" cy="128" r="74"/></clipPath>
       </defs>
       <!-- disc -->
-      <circle cx="112" cy="132" r="80" fill="url(#nfq-disc)"/>
-      <circle cx="112" cy="132" r="80" fill="none" stroke="${deep2}" stroke-width="3" opacity=".7"/>
-      <ellipse cx="96" cy="84" rx="58" ry="30" fill="#ffffff" opacity=".05"/>
-      <text x="112" y="198" text-anchor="middle" fill="#e7edf8" font-family="Inter, system-ui, sans-serif" font-size="13" font-weight="600" opacity=".82">Chat with me!</text>
-      <!-- right arm resting on the rim -->
-      <path d="M150 150 Q172 158 168 182" fill="none" stroke="url(#nfq-shell)" stroke-width="13" stroke-linecap="round"/>
-      <circle cx="167" cy="184" r="8" fill="#eef2f8" stroke="${EDGE}" stroke-width="1.5"/>
-      <!-- body -->
-      <rect x="84" y="120" width="60" height="66" rx="26" fill="url(#nfq-shell)" stroke="${EDGE}" stroke-width="1.5"/>
-      <rect x="104" y="112" width="20" height="14" rx="6" fill="${dark}"/>
-      <!-- chest chat bubble (glows) -->
-      <g filter="url(#nfq-glow)">
-        <rect x="97" y="138" width="34" height="25" rx="8" fill="${a}"/>
-        <path d="M105 163 l0 8 l9 -8 z" fill="${a}"/>
-        <circle cx="106" cy="150" r="2.4" fill="#fff"/><circle cx="114" cy="150" r="2.4" fill="#fff"/><circle cx="122" cy="150" r="2.4" fill="#fff"/>
-      </g>
+      <circle cx="116" cy="128" r="74" fill="url(#nfq-disc)"/>
+      <circle cx="116" cy="128" r="74" fill="none" stroke="${deep2}" stroke-width="3" opacity=".7"/>
+      <ellipse cx="100" cy="84" rx="54" ry="28" fill="#ffffff" opacity=".05"/>
+      <text x="116" y="188" text-anchor="middle" fill="#e7edf8" font-family="Inter, system-ui, sans-serif" font-size="12.5" font-weight="600" opacity=".8">Chat with me!</text>
+      <!-- raised arm holding the logo (drawn behind head/shoulders) -->
+      <path d="M104 150 L84 116 L70 90" fill="none" stroke="url(#nfq-shell)" stroke-width="12.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="68" cy="88" r="9" fill="#eef2f8" stroke="${EDGE}" stroke-width="1.5"/>
+      <!-- small shoulder hint just under the head (no torso / no chest message) -->
+      <rect x="114" y="146" width="16" height="11" rx="5" fill="${dark}"/>
+      <ellipse cx="118" cy="160" rx="30" ry="12" fill="url(#nfq-shell)" stroke="${EDGE}" stroke-width="1.5"/>
+      <!-- antenna -->
+      <line x1="146" y1="100" x2="156" y2="82" stroke="${dark}" stroke-width="3" stroke-linecap="round"/>
+      <circle cx="157" cy="79" r="5.5" fill="${a}" filter="url(#nfq-glow)"/>
+      <!-- ear lights -->
+      <circle cx="86" cy="124" r="7.5" fill="#e6ecf5" stroke="${EDGE}" stroke-width="1"/><circle cx="86" cy="124" r="3.6" fill="${a}" filter="url(#nfq-glow)"/>
+      <circle cx="150" cy="124" r="7.5" fill="#e6ecf5" stroke="${EDGE}" stroke-width="1"/><circle cx="150" cy="124" r="3.6" fill="${a}" filter="url(#nfq-glow)"/>
       <!-- head -->
-      <line x1="140" y1="70" x2="150" y2="50" stroke="${dark}" stroke-width="3" stroke-linecap="round"/>
-      <circle cx="151" cy="47" r="5.5" fill="${a}" filter="url(#nfq-glow)"/>
-      <circle cx="79" cy="96" r="8" fill="#e6ecf5" stroke="${EDGE}" stroke-width="1"/><circle cx="79" cy="96" r="4" fill="${a}" filter="url(#nfq-glow)"/>
-      <circle cx="153" cy="96" r="8" fill="#e6ecf5" stroke="${EDGE}" stroke-width="1"/><circle cx="153" cy="96" r="4" fill="${a}" filter="url(#nfq-glow)"/>
-      <rect x="78" y="64" width="76" height="62" rx="26" fill="url(#nfq-shell)" stroke="${EDGE}" stroke-width="1.5"/>
-      <rect x="88" y="74" width="56" height="43" rx="17" fill="#0b1320"/>
+      <rect x="86" y="94" width="64" height="56" rx="22" fill="url(#nfq-shell)" stroke="${EDGE}" stroke-width="1.5"/>
+      <rect x="95" y="103" width="46" height="38" rx="15" fill="#0b1320"/>
       <g filter="url(#nfq-glow)" stroke="${a}" stroke-width="3.6" fill="none" stroke-linecap="round">
-        <path d="M99 93 Q105 101 111 93"/>
-        <path d="M121 93 Q127 101 133 93"/>
-        <path d="M108 105 Q116 113 124 105"/>
+        <path d="M103 116 Q109 124 115 116"/>
+        <path d="M121 116 Q127 124 133 116"/>
+        <path d="M109 128 Q118 136 127 128"/>
       </g>
-      <!-- raised left arm holding the logo badge -->
-      <path d="M88 128 L72 100 L60 76" fill="none" stroke="url(#nfq-shell)" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
-      <circle cx="59" cy="74" r="8" fill="#eef2f8" stroke="${EDGE}" stroke-width="1.5"/>
-      <circle cx="55" cy="55" r="27" fill="${a}" opacity=".45" filter="url(#nfq-halo)"/>
-      <circle cx="55" cy="55" r="23.5" fill="#ffffff" stroke="${a}" stroke-width="2.5"/>
+      <!-- raised logo badge (bigger) -->
+      <circle cx="64" cy="61" r="33" fill="${a}" opacity=".45" filter="url(#nfq-halo)"/>
+      <circle cx="64" cy="61" r="29.5" fill="#ffffff" stroke="${a}" stroke-width="2.5"/>
       ${held}
     </svg>`;
   }
