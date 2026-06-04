@@ -123,23 +123,21 @@
       .cta-mini { margin-left: 6px; text-decoration: none; opacity: .4; font-size: 12px; transition: opacity .15s; }
       .cta-mini:hover { opacity: 1; }
       .fab {
-        position: fixed; bottom: 18px; right: 18px; width: 78px; height: 84px;
+        position: fixed; bottom: 14px; right: 14px; width: 96px; height: 104px;
         border: none; padding: 0; background: transparent; cursor: pointer; z-index: 2147483000;
-        filter: drop-shadow(0 12px 18px rgba(10,20,50,.28));
+        filter: drop-shadow(0 14px 20px rgba(10,20,50,.30));
         transition: transform .18s ease;
       }
       .fab:hover { transform: translateY(-3px) scale(1.05); }
-      .fab svg { width: 100%; height: 100%; display: block; transform-origin: 50% 70%; animation: nfqFloat 3.4s ease-in-out infinite; }
+      .fab svg { width: 100%; height: 100%; display: block; transform-origin: 50% 62%; animation: nfqFloat 3.6s ease-in-out infinite; }
       .fab:hover svg { animation-play-state: paused; }
-      .fab .nfq-eye { animation: nfqBlink 5s ease-in-out infinite; transform-origin: center; }
-      @keyframes nfqFloat { 0%,100% { transform: translateY(0) rotate(0); } 50% { transform: translateY(-4px) rotate(-1.2deg); } }
-      @keyframes nfqBlink { 0%,92%,100% { transform: scaleY(1); } 96% { transform: scaleY(.12); } }
+      @keyframes nfqFloat { 0%,100% { transform: translateY(0) rotate(0); } 50% { transform: translateY(-5px) rotate(-1.5deg); } }
       /* classic bubble launcher (cfg.launcher: 'chat') */
       .fab.fab-chat { width: 60px; height: 60px; border-radius: 50%; background: ${accent}; color: #fff;
         box-shadow: 0 10px 28px -8px rgba(0,0,0,.4); filter: none; display: grid; place-items: center; }
       .fab.fab-chat svg { width: 28px; height: 28px; animation: none; }
       .panel {
-        position: fixed; bottom: 110px; right: 18px; width: 374px; max-width: calc(100vw - 32px);
+        position: fixed; bottom: 126px; right: 18px; width: 374px; max-width: calc(100vw - 32px);
         height: 560px; max-height: calc(100vh - 130px); z-index: 2147483000;
         background: #fff; border-radius: 18px; overflow: hidden; display: flex; flex-direction: column;
         box-shadow: 0 24px 60px -20px rgba(10,20,50,.45); border: 1px solid #e6eaf2;
@@ -183,42 +181,67 @@
     r = Math.round((t - r) * a + r); g = Math.round((t - g) * a + g); b = Math.round((t - b) * a + b);
     return '#' + [r, g, b].map(x => x.toString(16).padStart(2, '0')).join('');
   }
+  // blend two hex colors; t=0 → c1, t=1 → c2
+  function mix(c1, c2, t) {
+    const p = h => { h = String(h).replace('#', ''); if (h.length === 3) h = h.split('').map(c => c + c).join(''); return [0, 2, 4].map(i => parseInt(h.slice(i, i + 2), 16)); };
+    const A = p(c1), B = p(c2);
+    return '#' + A.map((v, i) => Math.round(v + (B[i] - v) * t).toString(16).padStart(2, '0')).join('');
+  }
 
-  // A cute robot launcher that cradles the brand logo (or initial). Body color follows the accent.
+  // A friendly mascot bot sitting in a disc, holding the brand logo up in a glowing badge.
+  // Glowing parts (eyes, antenna, ear lights, chest bubble, badge ring) follow the accent color.
   function robotMarkup(cfg) {
     const a = cfg.accent || '#0047AB';
-    const dark = shade(a, -28), light = shade(a, 42);
+    // disc stays a premium deep navy (like a polished mascot badge) with only a whisper of accent
+    const deep = '#0b1630', deep2 = mix('#17294e', a, 0.16), dark = shade(a, -30);
+    const EDGE = '#cfd8e6';
     const useLogo = cfg.showLogoInLauncher !== false && !!cfg.logo;
     const held = useLogo
-      ? `<clipPath id="nfq-badge-clip"><circle cx="36" cy="58" r="12.4"/></clipPath>
-         <image href="${escapeHtml(cfg.logo)}" xlink:href="${escapeHtml(cfg.logo)}" x="23.6" y="45.6" width="24.8" height="24.8" preserveAspectRatio="xMidYMid slice" clip-path="url(#nfq-badge-clip)"/>`
-      : `<text x="36" y="63.5" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-size="15" font-weight="700" fill="${dark}">${escapeHtml(initials(cfg.brand))}</text>`;
-    return `<svg viewBox="0 0 72 84" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" aria-hidden="true">
-      <defs><linearGradient id="nfq-body" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0" stop-color="${light}"/><stop offset="1" stop-color="${a}"/></linearGradient></defs>
-      <!-- arms reaching down to cradle the badge -->
-      <path d="M20 35 C11 41 11 54 23 57" fill="none" stroke="${a}" stroke-width="6" stroke-linecap="round"/>
-      <path d="M52 35 C61 41 61 54 49 57" fill="none" stroke="${a}" stroke-width="6" stroke-linecap="round"/>
-      <!-- antenna -->
-      <line x1="36" y1="3" x2="36" y2="12" stroke="${dark}" stroke-width="3" stroke-linecap="round"/>
-      <circle cx="36" cy="3.6" r="3.3" fill="${light}"/>
-      <!-- ears -->
-      <rect x="9" y="22" width="6" height="13" rx="3" fill="${dark}"/>
-      <rect x="57" y="22" width="6" height="13" rx="3" fill="${dark}"/>
+      ? `<image href="${escapeHtml(cfg.logo)}" xlink:href="${escapeHtml(cfg.logo)}" x="34.5" y="34.5" width="41" height="41" preserveAspectRatio="xMidYMid slice" clip-path="url(#nfq-badge-clip)"/>`
+      : `<text x="55" y="64" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-size="24" font-weight="700" fill="${deep}">${escapeHtml(initials(cfg.brand))}</text>`;
+    return `<svg viewBox="0 0 200 216" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" aria-hidden="true">
+      <defs>
+        <linearGradient id="nfq-shell" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#dbe3ef"/></linearGradient>
+        <radialGradient id="nfq-disc" cx="40%" cy="28%" r="85%"><stop offset="0" stop-color="${deep2}"/><stop offset="1" stop-color="${deep}"/></radialGradient>
+        <filter id="nfq-glow" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="2.2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+        <filter id="nfq-halo" x="-90%" y="-90%" width="280%" height="280%"><feGaussianBlur stdDeviation="6"/></filter>
+        <clipPath id="nfq-badge-clip"><circle cx="55" cy="55" r="20.5"/></clipPath>
+      </defs>
+      <!-- disc -->
+      <circle cx="112" cy="132" r="80" fill="url(#nfq-disc)"/>
+      <circle cx="112" cy="132" r="80" fill="none" stroke="${deep2}" stroke-width="3" opacity=".7"/>
+      <ellipse cx="96" cy="84" rx="58" ry="30" fill="#ffffff" opacity=".05"/>
+      <text x="112" y="198" text-anchor="middle" fill="#e7edf8" font-family="Inter, system-ui, sans-serif" font-size="13" font-weight="600" opacity=".82">Chat with me!</text>
+      <!-- right arm resting on the rim -->
+      <path d="M150 150 Q172 158 168 182" fill="none" stroke="url(#nfq-shell)" stroke-width="13" stroke-linecap="round"/>
+      <circle cx="167" cy="184" r="8" fill="#eef2f8" stroke="${EDGE}" stroke-width="1.5"/>
+      <!-- body -->
+      <rect x="84" y="120" width="60" height="66" rx="26" fill="url(#nfq-shell)" stroke="${EDGE}" stroke-width="1.5"/>
+      <rect x="104" y="112" width="20" height="14" rx="6" fill="${dark}"/>
+      <!-- chest chat bubble (glows) -->
+      <g filter="url(#nfq-glow)">
+        <rect x="97" y="138" width="34" height="25" rx="8" fill="${a}"/>
+        <path d="M105 163 l0 8 l9 -8 z" fill="${a}"/>
+        <circle cx="106" cy="150" r="2.4" fill="#fff"/><circle cx="114" cy="150" r="2.4" fill="#fff"/><circle cx="122" cy="150" r="2.4" fill="#fff"/>
+      </g>
       <!-- head -->
-      <rect x="13.5" y="11" width="45" height="31" rx="12.5" fill="url(#nfq-body)" stroke="${dark}" stroke-width="1.5"/>
-      <!-- face screen -->
-      <rect x="20" y="17.5" width="32" height="18.5" rx="8" fill="#0e1422"/>
-      <!-- eyes + smile -->
-      <circle class="nfq-eye" cx="29" cy="26.5" r="3.4" fill="#fff"/>
-      <circle class="nfq-eye" cx="43" cy="26.5" r="3.4" fill="#fff"/>
-      <path d="M30 31.5 Q36 34.5 42 31.5" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round" opacity=".5"/>
-      <!-- badge being held -->
-      <circle cx="36" cy="58" r="14" fill="#fff" stroke="${dark}" stroke-width="2"/>
+      <line x1="140" y1="70" x2="150" y2="50" stroke="${dark}" stroke-width="3" stroke-linecap="round"/>
+      <circle cx="151" cy="47" r="5.5" fill="${a}" filter="url(#nfq-glow)"/>
+      <circle cx="79" cy="96" r="8" fill="#e6ecf5" stroke="${EDGE}" stroke-width="1"/><circle cx="79" cy="96" r="4" fill="${a}" filter="url(#nfq-glow)"/>
+      <circle cx="153" cy="96" r="8" fill="#e6ecf5" stroke="${EDGE}" stroke-width="1"/><circle cx="153" cy="96" r="4" fill="${a}" filter="url(#nfq-glow)"/>
+      <rect x="78" y="64" width="76" height="62" rx="26" fill="url(#nfq-shell)" stroke="${EDGE}" stroke-width="1.5"/>
+      <rect x="88" y="74" width="56" height="43" rx="17" fill="#0b1320"/>
+      <g filter="url(#nfq-glow)" stroke="${a}" stroke-width="3.6" fill="none" stroke-linecap="round">
+        <path d="M99 93 Q105 101 111 93"/>
+        <path d="M121 93 Q127 101 133 93"/>
+        <path d="M108 105 Q116 113 124 105"/>
+      </g>
+      <!-- raised left arm holding the logo badge -->
+      <path d="M88 128 L72 100 L60 76" fill="none" stroke="url(#nfq-shell)" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="59" cy="74" r="8" fill="#eef2f8" stroke="${EDGE}" stroke-width="1.5"/>
+      <circle cx="55" cy="55" r="27" fill="${a}" opacity=".45" filter="url(#nfq-halo)"/>
+      <circle cx="55" cy="55" r="23.5" fill="#ffffff" stroke="${a}" stroke-width="2.5"/>
       ${held}
-      <!-- hands gripping the badge -->
-      <circle cx="22.5" cy="57" r="4.6" fill="${light}" stroke="${dark}" stroke-width="1"/>
-      <circle cx="49.5" cy="57" r="4.6" fill="${light}" stroke="${dark}" stroke-width="1"/>
     </svg>`;
   }
 
