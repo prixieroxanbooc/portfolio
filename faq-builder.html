@@ -52,6 +52,23 @@
             <div class="note" id="logonote" style="font-size:12px;color:var(--muted);margin-top:6px">Embedded into the snippet as a data URL — no hosting needed.</div>
           </div>
         </div>
+
+        <label class="fld" style="margin-top:14px">Floating launcher style</label>
+        <div class="row" style="gap:14px;align-items:flex-end">
+          <div class="col">
+            <select id="launcher" onchange="apply()" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;font-size:14px;background:#fff">
+              <option value="robot">🤖 Robot holding your logo (recommended)</option>
+              <option value="chat">💬 Classic chat bubble</option>
+            </select>
+          </div>
+          <div class="col" style="flex:0 0 auto">
+            <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);cursor:pointer;padding-bottom:10px">
+              <input type="checkbox" id="holdlogo" checked onchange="apply()" style="width:16px;height:16px">
+              Robot cradles my logo
+            </label>
+          </div>
+        </div>
+        <div class="note" style="font-size:12px;color:var(--muted);margin-top:6px">The robot's color follows your accent color above. With no logo (or unchecked), it shows your brand initial instead.</div>
       </div>
 
       <div class="panel panel-pad" style="margin-top:18px">
@@ -189,6 +206,8 @@ function currentConfig(){
     greeting: document.getElementById('greeting').value,
     accent: document.getElementById('accent').value,
     logo: logoDataUrl,
+    launcher: document.getElementById('launcher').value,
+    showLogoInLauncher: document.getElementById('holdlogo').checked,
     categories: parseFaqs(document.getElementById('faqs').value),
   };
 }
@@ -236,6 +255,8 @@ function loadConfigIntoBuilder(cfg){
   if(cfg.tagline!=null)  document.getElementById('tagline').value = cfg.tagline;
   if(cfg.greeting!=null) document.getElementById('greeting').value = cfg.greeting;
   if(cfg.accent)         document.getElementById('accent').value = cfg.accent;
+  if(cfg.launcher)       document.getElementById('launcher').value = cfg.launcher;
+  if(cfg.showLogoInLauncher!=null) document.getElementById('holdlogo').checked = !!cfg.showLogoInLauncher;
   logoDataUrl = cfg.logo || null;
   if(Array.isArray(cfg.categories)) document.getElementById('faqs').value = serialize(cfg);
   apply();
@@ -293,7 +314,7 @@ function saveToTxn(){
 // Logo is included whether it's a URL or an uploaded image (data URL) — the .json
 // file has no size limit like a chat message would.
 function slimConfig(cfg){
-  const slim = { brand:cfg.brand, tagline:cfg.tagline, accent:cfg.accent, greeting:cfg.greeting, categories:cfg.categories };
+  const slim = { brand:cfg.brand, tagline:cfg.tagline, accent:cfg.accent, greeting:cfg.greeting, launcher:cfg.launcher, showLogoInLauncher:cfg.showLogoInLauncher, categories:cfg.categories };
   if (cfg.logo) slim.logo = cfg.logo;   // include uploaded logo (data URL) or logo URL
   return slim;
 }
@@ -310,6 +331,8 @@ function loadSample(){
   document.getElementById('tagline').value = window.NovaFAQWidget.default.tagline;
   document.getElementById('greeting').value = window.NovaFAQWidget.default.greeting;
   document.getElementById('accent').value = window.NovaFAQWidget.default.accent;
+  document.getElementById('launcher').value = window.NovaFAQWidget.default.launcher || 'robot';
+  document.getElementById('holdlogo').checked = window.NovaFAQWidget.default.showLogoInLauncher !== false;
   document.getElementById('faqs').value = serialize(window.NovaFAQWidget.default);
   apply();
 }

@@ -13,6 +13,8 @@
     tagline: 'Banking Built Around You',
     accent: '#0047AB',
     logo: null,
+    launcher: 'robot',            // 'robot' (cute bot holding your logo) | 'chat' (classic bubble)
+    showLogoInLauncher: true,     // robot cradles your logo; false → shows brand initial
     greeting: 'Hi! 👋 I can help with common questions. Pick a topic to get started.',
     cta: { label: 'Want this on your site? Build your own', url: 'https://prixieroxanbooc.github.io/portfolio/faq-builder.html' },
     categories: [
@@ -121,15 +123,23 @@
       .cta-mini { margin-left: 6px; text-decoration: none; opacity: .4; font-size: 12px; transition: opacity .15s; }
       .cta-mini:hover { opacity: 1; }
       .fab {
-        position: fixed; bottom: 22px; right: 22px; width: 60px; height: 60px;
-        border-radius: 50%; border: none; cursor: pointer; z-index: 2147483000;
-        background: ${accent}; color: #fff; box-shadow: 0 10px 28px -8px rgba(0,0,0,.4);
-        display: grid; place-items: center; transition: transform .15s, box-shadow .15s;
+        position: fixed; bottom: 18px; right: 18px; width: 78px; height: 84px;
+        border: none; padding: 0; background: transparent; cursor: pointer; z-index: 2147483000;
+        filter: drop-shadow(0 12px 18px rgba(10,20,50,.28));
+        transition: transform .18s ease;
       }
-      .fab:hover { transform: translateY(-2px) scale(1.04); }
-      .fab svg { width: 28px; height: 28px; }
+      .fab:hover { transform: translateY(-3px) scale(1.05); }
+      .fab svg { width: 100%; height: 100%; display: block; transform-origin: 50% 70%; animation: nfqFloat 3.4s ease-in-out infinite; }
+      .fab:hover svg { animation-play-state: paused; }
+      .fab .nfq-eye { animation: nfqBlink 5s ease-in-out infinite; transform-origin: center; }
+      @keyframes nfqFloat { 0%,100% { transform: translateY(0) rotate(0); } 50% { transform: translateY(-4px) rotate(-1.2deg); } }
+      @keyframes nfqBlink { 0%,92%,100% { transform: scaleY(1); } 96% { transform: scaleY(.12); } }
+      /* classic bubble launcher (cfg.launcher: 'chat') */
+      .fab.fab-chat { width: 60px; height: 60px; border-radius: 50%; background: ${accent}; color: #fff;
+        box-shadow: 0 10px 28px -8px rgba(0,0,0,.4); filter: none; display: grid; place-items: center; }
+      .fab.fab-chat svg { width: 28px; height: 28px; animation: none; }
       .panel {
-        position: fixed; bottom: 94px; right: 22px; width: 374px; max-width: calc(100vw - 32px);
+        position: fixed; bottom: 110px; right: 18px; width: 374px; max-width: calc(100vw - 32px);
         height: 560px; max-height: calc(100vh - 130px); z-index: 2147483000;
         background: #fff; border-radius: 18px; overflow: hidden; display: flex; flex-direction: column;
         box-shadow: 0 24px 60px -20px rgba(10,20,50,.45); border: 1px solid #e6eaf2;
@@ -163,6 +173,55 @@
   const ICON_CHAT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>';
   const ICON_X = '✕';
 
+  // mix a hex color toward black (p<0) or white (p>0); p is a percent -100..100
+  function shade(hex, p) {
+    let h = String(hex || '#0047AB').replace('#', '');
+    if (h.length === 3) h = h.split('').map(c => c + c).join('');
+    if (!/^[0-9a-fA-F]{6}$/.test(h)) h = '0047AB';
+    let r = parseInt(h.slice(0, 2), 16), g = parseInt(h.slice(2, 4), 16), b = parseInt(h.slice(4, 6), 16);
+    const t = p < 0 ? 0 : 255, a = Math.abs(p) / 100;
+    r = Math.round((t - r) * a + r); g = Math.round((t - g) * a + g); b = Math.round((t - b) * a + b);
+    return '#' + [r, g, b].map(x => x.toString(16).padStart(2, '0')).join('');
+  }
+
+  // A cute robot launcher that cradles the brand logo (or initial). Body color follows the accent.
+  function robotMarkup(cfg) {
+    const a = cfg.accent || '#0047AB';
+    const dark = shade(a, -28), light = shade(a, 42);
+    const useLogo = cfg.showLogoInLauncher !== false && !!cfg.logo;
+    const held = useLogo
+      ? `<clipPath id="nfq-badge-clip"><circle cx="36" cy="58" r="12.4"/></clipPath>
+         <image href="${escapeHtml(cfg.logo)}" xlink:href="${escapeHtml(cfg.logo)}" x="23.6" y="45.6" width="24.8" height="24.8" preserveAspectRatio="xMidYMid slice" clip-path="url(#nfq-badge-clip)"/>`
+      : `<text x="36" y="63.5" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-size="15" font-weight="700" fill="${dark}">${escapeHtml(initials(cfg.brand))}</text>`;
+    return `<svg viewBox="0 0 72 84" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" aria-hidden="true">
+      <defs><linearGradient id="nfq-body" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="${light}"/><stop offset="1" stop-color="${a}"/></linearGradient></defs>
+      <!-- arms reaching down to cradle the badge -->
+      <path d="M20 35 C11 41 11 54 23 57" fill="none" stroke="${a}" stroke-width="6" stroke-linecap="round"/>
+      <path d="M52 35 C61 41 61 54 49 57" fill="none" stroke="${a}" stroke-width="6" stroke-linecap="round"/>
+      <!-- antenna -->
+      <line x1="36" y1="3" x2="36" y2="12" stroke="${dark}" stroke-width="3" stroke-linecap="round"/>
+      <circle cx="36" cy="3.6" r="3.3" fill="${light}"/>
+      <!-- ears -->
+      <rect x="9" y="22" width="6" height="13" rx="3" fill="${dark}"/>
+      <rect x="57" y="22" width="6" height="13" rx="3" fill="${dark}"/>
+      <!-- head -->
+      <rect x="13.5" y="11" width="45" height="31" rx="12.5" fill="url(#nfq-body)" stroke="${dark}" stroke-width="1.5"/>
+      <!-- face screen -->
+      <rect x="20" y="17.5" width="32" height="18.5" rx="8" fill="#0e1422"/>
+      <!-- eyes + smile -->
+      <circle class="nfq-eye" cx="29" cy="26.5" r="3.4" fill="#fff"/>
+      <circle class="nfq-eye" cx="43" cy="26.5" r="3.4" fill="#fff"/>
+      <path d="M30 31.5 Q36 34.5 42 31.5" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round" opacity=".5"/>
+      <!-- badge being held -->
+      <circle cx="36" cy="58" r="14" fill="#fff" stroke="${dark}" stroke-width="2"/>
+      ${held}
+      <!-- hands gripping the badge -->
+      <circle cx="22.5" cy="57" r="4.6" fill="${light}" stroke="${dark}" stroke-width="1"/>
+      <circle cx="49.5" cy="57" r="4.6" fill="${light}" stroke="${dark}" stroke-width="1"/>
+    </svg>`;
+  }
+
   function init(userCfg) {
     const cfg = Object.assign({}, DEFAULT, userCfg || {});
     cfg.categories = (userCfg && userCfg.categories && userCfg.categories.length) ? userCfg.categories : DEFAULT.categories;
@@ -180,8 +239,10 @@
     const wrap = el('div', { class: 'root' });
     root.appendChild(wrap);
 
-    // launcher
-    const fab = el('button', { class: 'fab', 'aria-label': 'Open help' }, ICON_CHAT);
+    // launcher — robot cradling the logo (default), or classic chat bubble
+    const isChat = cfg.launcher === 'chat';
+    const fab = el('button', { class: 'fab' + (isChat ? ' fab-chat' : ' fab-robot'), 'aria-label': 'Open help' },
+      isChat ? ICON_CHAT : robotMarkup(cfg));
     wrap.appendChild(fab);
 
     // panel
