@@ -4,11 +4,46 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Demo · AI Usage Analytics Dashboard</title>
+<meta name="description" content="Interactive demo replica of an internal AI-platform usage analytics dashboard — sessions, daily active users, per-team adoption, assistant usage and role-based access. Sample data only.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Inter:wght@400;500;600&family=Public+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="brand-pdf.js"></script>
+<style>
+  /* demo-only chart styling (layout comes from styles.css) */
+  .pal0{color:#2451b8}
+  .chips{display:flex;gap:7px;flex-wrap:wrap;align-items:center;margin-bottom:16px}
+  .chips .lbl{color:var(--muted);font-size:13px;margin-right:4px}
+  .rchip{font:600 12px/1 Inter,sans-serif;border:1px solid var(--border);background:#fff;color:#2451b8;
+    border-radius:999px;padding:7px 13px;cursor:pointer}
+  .rchip:hover{border-color:#2451b8}
+  .rchip.on{background:#2451b8;color:#fff;border-color:#2451b8}
+  .barrow{display:flex;align-items:center;gap:10px;margin:7px 0;font-size:13px}
+  .barrow .lab{width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink,#1b2333)}
+  .barrow .trk{flex:1;background:#eef1f7;border-radius:999px;height:16px;overflow:hidden}
+  .barrow .fil{display:block;height:100%;border-radius:999px}
+  .barrow .num{width:54px;text-align:right;font-family:'IBM Plex Mono',monospace;color:var(--muted)}
+  .teamwrap{display:flex;gap:22px;flex-wrap:wrap}
+  .teambars{flex:1;min-width:280px}
+  .trow{display:flex;align-items:center;gap:11px;padding:7px 9px;border-radius:9px;transition:background .12s,opacity .12s}
+  .trow .tn{width:150px;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .trow .tt{flex:1;background:#eef1f7;border-radius:999px;height:17px;overflow:hidden}
+  .trow .tf{display:block;height:100%;border-radius:999px}
+  .trow .tnum{width:60px;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--muted)}
+  .trow.hot{background:#eef3fc} .trow.dim{opacity:.38}
+  .tdetail{width:210px;min-width:190px;background:#f7f9fc;border:1px solid var(--border);border-radius:12px;padding:15px}
+  .tdetail .tdn{font-family:Poppins,sans-serif;font-weight:600;color:#2451b8;margin-bottom:12px}
+  .tdgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .tdgrid b{font-family:Poppins,sans-serif;font-size:20px;color:#16243a;display:block;line-height:1.1}
+  .tdgrid span{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+  .legend .barrow .lab{width:auto;flex:1}
+  .dot{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:8px;flex:none}
+  .pill{display:inline-block;padding:2px 9px;border-radius:999px;font-size:11px;font-weight:600}
+  .pill.api{background:#eef1f6;color:var(--muted)}
+  .pill.none{background:#fae7e4;color:#c23b2e} .pill.inf{background:#eef1f6;color:var(--muted)}
+  .pill.pub{background:#e0f3ea;color:#1e9e6a} .pill.priv{background:#eef1f6;color:var(--muted)}
+  .cap{color:var(--muted);font-size:13px;margin:0 0 10px}
+  svg text{font-family:'IBM Plex Mono',monospace;font-size:10px;fill:var(--muted)}
+</style>
 </head>
 <body>
 
@@ -24,177 +59,257 @@
 <header class="demo-head">
   <div class="wrap">
     <div class="tag">NovaBank · AI platform analytics</div>
-    <h1>NovaBank AI Usage Analytics Dashboard</h1>
-    <p>Gives NovaBank leadership real visibility into who is using the internal AI platform — totals, growth, and breakdowns by role and team — behind an identity-aware proxy with role-based access and a full audit trail. All figures below are fabricated sample data.</p>
+    <h1>AI Usage Analytics Dashboard</h1>
+    <p>Real visibility into how an internal AI assistant platform is actually used — sessions over time, daily active users, which assistants get used, per-team adoption, and who's never moved beyond the basic chat. Behind an identity-aware proxy with role-based access. Every figure below is fabricated sample data; pick a date range and hover the charts.</p>
   </div>
 </header>
 
 <main class="wrap" style="padding-bottom:40px">
 
-  <div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:14px;flex-wrap:wrap">
-    <button class="btn btn-ghost btn-sm" onclick="exportCsv()">⬇ Export KPIs (.csv)</button>
-    <button class="btn btn-primary btn-sm" onclick="exportPdf()">⬇ Download report (.pdf)</button>
+  <!-- date range -->
+  <div class="chips">
+    <span class="lbl">Date range</span>
+    <button class="rchip" data-d="1" onclick="setRange(1,this)">1d</button>
+    <button class="rchip" data-d="3" onclick="setRange(3,this)">3d</button>
+    <button class="rchip" data-d="7" onclick="setRange(7,this)">7d</button>
+    <button class="rchip on" data-d="30" onclick="setRange(30,this)">30d</button>
+    <button class="rchip" data-d="90" onclick="setRange(90,this)">90d</button>
+    <button class="rchip" data-d="0" onclick="setRange(0,this)">All time</button>
+    <span class="lbl" id="rlabel" style="margin-left:auto"></span>
   </div>
 
   <!-- KPIs -->
-  <div class="kpi-grid">
-    <div class="kpi"><div class="n">107</div><div class="l">total accounts</div><div class="d up">▲ 12 new (30d)</div></div>
-    <div class="kpi"><div class="n">71</div><div class="l">active (7d)</div><div class="d up">▲ 6%</div></div>
-    <div class="kpi"><div class="n">14</div><div class="l">admins</div><div class="d">93 standard</div></div>
-    <div class="kpi"><div class="n">9</div><div class="l">dormant (30d)</div><div class="d down">needs enablement</div></div>
-    <div class="kpi"><div class="n">5</div><div class="l">pending invites</div><div class="d">awaiting first login</div></div>
+  <div class="kpi-grid" id="kpis"></div>
+
+  <!-- usage by team -->
+  <div class="panel panel-pad" style="margin-top:22px">
+    <h3 style="margin-bottom:4px">Usage by team</h3>
+    <p class="cap">Hover a team to highlight it — strongest is highlighted by default.</p>
+    <div id="teams"></div>
+  </div>
+
+  <!-- sessions per day -->
+  <div class="panel panel-pad" style="margin-top:22px">
+    <h3 style="margin-bottom:4px">Sessions per day</h3>
+    <p class="cap">Hover a point to see that day's most active user.</p>
+    <svg id="sessChart" viewBox="0 0 1100 240" width="100%" height="240"></svg>
+    <div class="cap" id="topUserCap" style="margin-top:8px"></div>
   </div>
 
   <div class="row" style="margin-top:22px">
-    <!-- growth chart -->
-    <div class="col" style="flex:1.4">
-      <div class="panel panel-pad">
-        <h3 style="margin-bottom:6px">Account growth</h3>
-        <p style="color:var(--muted);font-size:13px;margin:0 0 10px">Cumulative provisioned accounts — sample</p>
-        <svg id="chart" viewBox="0 0 640 240" width="100%" height="240" role="img" aria-label="growth chart"></svg>
-      </div>
-    </div>
-    <!-- by role -->
     <div class="col">
       <div class="panel panel-pad">
-        <h3 style="margin-bottom:12px">By department</h3>
-        <table>
-          <thead><tr><th>Team</th><th>Members</th><th>Active</th></tr></thead>
-          <tbody>
-            <tr><td>AI / Automation</td><td>4</td><td><span style="color:var(--success)">4</span></td></tr>
-            <tr><td>Operations</td><td>28</td><td><span style="color:var(--success)">21</span></td></tr>
-            <tr><td>Finance</td><td>19</td><td><span style="color:var(--success)">14</span></td></tr>
-            <tr><td>Credit & Risk</td><td>22</td><td><span style="color:var(--success)">15</span></td></tr>
-            <tr><td>Branch network</td><td>26</td><td><span style="color:var(--warning)">12</span></td></tr>
-            <tr><td>Unassigned</td><td>8</td><td>—</td></tr>
-          </tbody>
-        </table>
+        <h3 style="margin-bottom:4px">Top assistants</h3>
+        <p class="cap">By sessions — click “+ more” to expand.</p>
+        <div id="donut"></div>
+      </div>
+    </div>
+    <div class="col">
+      <div class="panel panel-pad">
+        <h3 style="margin-bottom:4px">Daily active users</h3>
+        <p class="cap">Per day in the selected range.</p>
+        <svg id="dauChart" viewBox="0 0 1100 240" width="100%" height="240"></svg>
       </div>
     </div>
   </div>
 
+  <!-- most active users -->
+  <div class="panel panel-pad" style="margin-top:22px">
+    <h3 style="margin-bottom:12px">Most active users <span style="font-weight:400;color:var(--muted);font-size:12px">— manager view</span></h3>
+    <table><thead><tr><th>User</th><th>Sessions</th><th>Assistants used</th></tr></thead><tbody id="users"></tbody></table>
+  </div>
+
+  <!-- new session only + agent ownership -->
   <div class="row" style="margin-top:22px">
-    <!-- recent activity -->
-    <div class="col" style="flex:1.4">
+    <div class="col">
       <div class="panel panel-pad">
-        <h3 style="margin-bottom:12px">Recent sign-ups</h3>
-        <table>
-          <thead><tr><th>User</th><th>Role</th><th>Team</th><th>Joined</th></tr></thead>
-          <tbody id="recent"></tbody>
-        </table>
+        <h3 style="margin-bottom:4px">New Session only</h3>
+        <p class="cap" id="naCap">Users who never opened a custom assistant — onboarding targets.</p>
+        <table><thead><tr><th>User</th><th>Sessions</th></tr></thead><tbody id="nonagent"></tbody></table>
       </div>
     </div>
-    <!-- security panel -->
-    <div class="col" id="security">
+    <div class="col">
       <div class="panel panel-pad">
-        <h3 style="margin-bottom:10px">Access & governance</h3>
-        <table>
-          <tr><td>Edge auth</td><td>Identity-aware proxy — org domain only, no public exposure</td></tr>
-          <tr><td>In-app roles</td><td><span class="mono">super_admin</span> / <span class="mono">member</span> (view-only)</td></tr>
-          <tr><td>Audit trail</td><td>Every view, grant, revoke & denied attempt logged</td></tr>
-          <tr><td>Secrets</td><td>Platform API key stored in a managed secret vault</td></tr>
-        </table>
-        <div style="margin-top:14px"><span class="badge-live">Audit logging on</span></div>
+        <h3 style="margin-bottom:4px">Agent ownership</h3>
+        <p class="cap">Recorded owner, or the <b>likely creator</b> (first user) when the platform records none.</p>
+        <table><thead><tr><th>Assistant</th><th>Owner</th><th>Likely creator</th><th></th></tr></thead><tbody id="owners"></tbody></table>
       </div>
     </div>
   </div>
+
+  <!-- governance -->
+  <div class="panel panel-pad" id="security" style="margin-top:22px">
+    <h3 style="margin-bottom:10px">Access & governance</h3>
+    <table>
+      <tr><td>Edge auth</td><td>Identity-aware proxy — org domain only, no public exposure</td></tr>
+      <tr><td>In-app roles</td><td><span class="mono">super_admin</span> / <span class="mono">admin</span> / <span class="mono">user</span> — per-role visibility (managers see per-user detail; users see only aggregates; super-admins are hidden from admins)</td></tr>
+      <tr><td>Onboarding</td><td>Granting access emails the user automatically with a branded sign-in link</td></tr>
+      <tr><td>Audit trail</td><td>Every view, grant, revoke &amp; denied attempt is logged</td></tr>
+      <tr><td>Secrets</td><td>Platform credentials &amp; service keys stored in a managed secret vault</td></tr>
+    </table>
+    <div style="margin-top:14px"><span class="badge-live">Audit logging on</span></div>
+  </div>
+
+  <p class="cap" style="text-align:center;margin-top:26px">Built as a serverless service (Node.js · Express) reading a read-only analytics replica, with hand-rolled SVG charts — no charting library. Rapidly prototyped with the help of Claude Code.</p>
 </main>
 
 <footer><div class="wrap"><div>Demo · sample data only.</div><div><a href="https://larouxantech.com/">← Portfolio</a></div></div></footer>
 
 <script>
-// --- growth chart (sample cumulative) ---
-const pts = [4,9,18,31,47,63,78,89,97,103,107];
-const W=640,H=240,pad=30;
-const max=Math.max(...pts), stepX=(W-pad*2)/(pts.length-1);
-const x=i=>pad+i*stepX, y=v=>H-pad-(v/max)*(H-pad*2);
-let line='', area=`M${x(0)},${H-pad} `;
-pts.forEach((v,i)=>{ line+=(i?'L':'M')+x(i)+','+y(v)+' '; area+='L'+x(i)+','+y(v)+' '; });
-area+=`L${x(pts.length-1)},${H-pad} Z`;
-const svg=document.getElementById('chart');
-svg.innerHTML=`
-  <defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
-    <stop offset="0" stop-color="#3b6fe0" stop-opacity=".28"/>
-    <stop offset="1" stop-color="#3b6fe0" stop-opacity="0"/></linearGradient></defs>
-  <path d="${area}" fill="url(#g)"/>
-  <path d="${line}" fill="none" stroke="#2451b8" stroke-width="2.5" stroke-linejoin="round"/>
-  ${pts.map((v,i)=>`<circle cx="${x(i)}" cy="${y(v)}" r="3" fill="#fff" stroke="#2451b8" stroke-width="2"/>`).join('')}
-`;
-// --- recent sign-ups (fabricated) ---
-const recent=[
-  ['Maria S.','Standard','Operations','2 days ago'],
-  ['John P.','Admin','AI / Automation','4 days ago'],
-  ['Rina T.','Standard','Finance','5 days ago'],
-  ['Carlo D.','Standard','Credit & Risk','1 week ago'],
-  ['Ella M.','Standard','Branch network','1 week ago'],
-];
-document.getElementById('recent').innerHTML = recent.map(r=>
-  `<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td style="color:var(--muted)">${r[3]}</td></tr>`).join('');
+const PAL = ["#2451b8","#0d7e8c","#7C3AED","#F59E0B","#10B981","#EC4899","#EF4444","#3B82F6","#14B8A6","#F97316","#8B5CF6","#22C55E","#0EA5E9","#D946EF"];
+const esc = s => String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const fmt = n => Number(n||0).toLocaleString();
 
-// ---- sample report data + exports (client-side) ----
-const KPIS = [
-  ['Total accounts',107],['Active (7d)',71],['Admins',14],['Standard users',93],
-  ['Dormant (30d)',9],['Pending invites',5],
+// ---- fabricated 90-day dataset (deterministic, no real data) ----
+const NAMES = ["maria.s","john.p","rina.t","carlo.d","ella.m","ben.q","grace.l","ian.v","noah.k","tina.r","alex.g","kim.d"];
+const DAYS = (()=>{ const out=[]; const today=new Date();
+  for(let i=89;i>=0;i--){ const dt=new Date(today); dt.setDate(today.getDate()-i);
+    const idx=89-i;
+    const active = Math.max(3, Math.round(8 + 9*Math.abs(Math.sin(idx/6)) + idx*0.18));
+    const sessions = Math.round(active * (1.7 + 0.6*Math.abs(Math.sin(idx/4))));
+    const tu = NAMES[idx % NAMES.length] + "@novabank.demo";
+    out.push({ day: dt.toISOString().slice(0,10), active_users:active, sessions, top_user:tu, top_user_sessions: 3 + (idx%6) });
+  }
+  return out;
+})();
+const AGENTS = [["Assistant (New Session)",0],["RFP Auto-Answer",161],["Risk Event Reporter",119],["Project Brief Agent",107],
+  ["Policy Gap Analysis",61],["Sales Plan Builder",57],["Hiring Scorecard",38],["API Expert",29],["Audit Prep",23],
+  ["Marketing Metrics",18],["Credit Policy Reviewer",14],["Onboarding Helper",11],["Invoice Discounting",9],["KYB Assistant",7]];
+const TEAMS_BASE = [["AI / Automation",1],["Operations",.62],["Finance",.4],["Credit & Risk",.55],["Branch network",.28],["Unassigned",.7]];
+const USERS = NAMES.map((n,i)=>({email:n+"@novabank.demo", base: 90-i*7, agents: 1+(i%8)}));
+const OWNERS = [
+  ["RFP Auto-Answer","grace.l@novabank.demo",null,true],
+  ["Risk Event Reporter",null,"john.p@novabank.demo",true],
+  ["Project Brief Agent","maria.s@novabank.demo",null,true],
+  ["Policy Gap Analysis",null,"carlo.d@novabank.demo",true],
+  ["Sales Plan Builder",null,"ella.m@novabank.demo",true],
+  ["Hiring Scorecard",null,"grace.l@novabank.demo",false],
+  ["API Expert","ian.v@novabank.demo",null,true],
+  ["Onboarding Helper",null,null,false],
 ];
-const DEPTS = [
-  ['AI / Automation',4,4],['Operations',28,21],['Finance',19,14],
-  ['Credit & Risk',22,15],['Branch network',26,12],['Unassigned',8,0],
-];
-function exportCsv(){
-  let csv = 'NovaBank — AI Platform Usage Report\n';
-  csv += 'Banking Built Around You,Fictional demo brand — sample data only\n\nKPI,Value\n';
-  KPIS.forEach(k=> csv += `${k[0]},${k[1]}\n`);
-  csv += '\nDepartment,Members,Active\n';
-  DEPTS.forEach(d=> csv += `${d[0]},${d[1]},${d[2]}\n`);
-  const blob = new Blob([csv], {type:'text/csv'});
-  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
-  a.download='NovaBank-ai-usage-kpis-demo.csv'; document.body.appendChild(a); a.click();
-  setTimeout(()=>{URL.revokeObjectURL(a.href); a.remove();},1500);
+
+let RANGE = 30;
+function slice(){ return RANGE===0 ? DAYS : DAYS.slice(-RANGE); }
+
+function setRange(d, btn){
+  RANGE = d;
+  document.querySelectorAll(".rchip").forEach(b=>b.classList.toggle("on", b===btn));
+  render();
 }
-function exportPdf(){
-  if(!window.jspdf || !window.NovaBrand){ alert('PDF libraries still loading.'); return; }
-  const { jsPDF } = window.jspdf; const B = window.NovaBrand; const C = B.C;
-  const d = new jsPDF({unit:'pt', format:'a4'});
-  const W = d.internal.pageSize.getWidth(); const M = 40;
-  let y = B.header(d, {title:'AI USAGE'});
 
-  d.setTextColor(...C.navy); d.setFont('helvetica','bold'); d.setFontSize(15);
-  d.text('AI Platform — Usage Report', M, y); y += 8;
-  d.setFont('helvetica','italic'); d.setFontSize(9); d.setTextColor(...C.darkGray);
-  d.text('Sample analytics — fictional demo data.', M, y+13); y += 36;
+function render(){
+  const data = slice();
+  const sessions = data.reduce((s,x)=>s+x.sessions,0);
+  const agentSessions = Math.round(sessions*0.48);
+  const noAgent = sessions - agentSessions;
+  const peak = Math.max(...data.map(x=>x.active_users),0);
+  const users = Math.min(USERS.length+12, 30 + Math.round(RANGE*0.7||98));
+  $("rlabel").textContent = RANGE===0 ? "Showing: all time" : `Showing last ${RANGE} day${RANGE>1?"s":""}`;
 
-  // KPI cards: 3 columns x 2 rows
-  const gap = 12, cols = 3;
-  const cardW = (W - 2*M - (cols-1)*gap) / cols, cardH = 56;
-  KPIS.forEach((k,i)=>{
-    const col = i % cols, row = Math.floor(i / cols);
-    const x = M + col*(cardW+gap), cy = y + row*(cardH+gap);
-    d.setFillColor(...C.lightGray); d.roundedRect(x, cy, cardW, cardH, 8, 8, 'F');
-    d.setTextColor(...C.blue); d.setFont('helvetica','bold'); d.setFontSize(20);
-    d.text(String(k[1]), x+14, cy+30);
-    d.setTextColor(...C.darkGray); d.setFont('helvetica','normal'); d.setFontSize(8.5);
-    d.text(String(k[0]).toUpperCase(), x+14, cy+45);
-  });
-  y += 2*(cardH+gap) + 16;
+  // KPIs
+  $("kpis").innerHTML =
+    kpi(fmt(users),"users with activity")+kpi(fmt(sessions),"total sessions")+
+    kpi(fmt(agentSessions),"agent sessions")+kpi(fmt(noAgent),"new session (no agent)")+
+    kpi(fmt(peak),"peak users / day");
 
-  // department table
-  d.setTextColor(...C.navy); d.setFont('helvetica','bold'); d.setFontSize(12);
-  d.text('By department', M, y); y += 14;
-  d.setFillColor(...C.navy); d.rect(M, y, W-2*M, 24, 'F');
-  d.setTextColor(...C.white); d.setFont('helvetica','bold'); d.setFontSize(9);
-  d.text('TEAM', M+12, y+16); d.text('MEMBERS', W-M-110, y+16, {align:'right'}); d.text('ACTIVE', W-M-12, y+16, {align:'right'});
-  y += 24;
-  d.setFont('helvetica','normal'); d.setFontSize(10.5);
-  DEPTS.forEach((t,i)=>{
-    if(i%2){ d.setFillColor(...C.zebra); d.rect(M, y, W-2*M, 22, 'F'); }
-    d.setTextColor(...C.navy); d.text(t[0], M+12, y+15);
-    d.text(String(t[1]), W-M-110, y+15, {align:'right'}); d.text(String(t[2]), W-M-12, y+15, {align:'right'});
-    y += 22;
-  });
+  // teams (scaled by range sessions)
+  const teams = TEAMS_BASE.map(([name,w],i)=>({name, sessions: Math.round(sessions*w/3.5), members: [4,28,19,22,26,8][i], using: [4,21,14,15,12,6][i], unassigned: name==="Unassigned"}))
+    .sort((a,b)=>b.sessions-a.sessions);
+  teamsChart(teams);
 
-  B.footer(d, 'Fictional demo — sample analytics only.');
-  d.save('NovaBank-ai-usage-report-demo.pdf');
+  // sessions line + DAU bars
+  lineChart($("sessChart"), data, "sessions");
+  barsChart($("dauChart"), data.map(d=>({label:d.day.slice(5), value:d.active_users})));
+  const tu = data.reduce((a,b)=>b.sessions>a.sessions?b:a, data[0]||{});
+  $("topUserCap").innerHTML = tu&&tu.top_user ? `⭐ Most active user in range: <b>${esc(tu.top_user)}</b>` : "";
+
+  // donut
+  donut(AGENTS.map(([label,base],i)=>({label, value: label.startsWith("Assistant")? noAgent : Math.max(2,Math.round(base*(RANGE?RANGE/30:3)))})));
+
+  // users table
+  const ut = USERS.map(u=>({email:u.email, sessions: Math.max(2, Math.round(u.base*(RANGE?RANGE/30:3))), agents:u.agents})).sort((a,b)=>b.sessions-a.sessions);
+  $("users").innerHTML = ut.map(u=>`<tr><td>${esc(u.email)}</td><td class="mono">${fmt(u.sessions)}</td><td class="mono">${u.agents}</td></tr>`).join("");
+
+  // new session only
+  const na = ut.slice(-6).map(u=>({email:u.email, sessions: Math.max(1,Math.round(u.sessions*0.5))}));
+  $("naCap").textContent = `${na.length} users never opened a custom assistant — onboarding targets.`;
+  $("nonagent").innerHTML = na.map(u=>`<tr><td>${esc(u.email)}</td><td class="mono">${fmt(u.sessions)}</td></tr>`).join("");
+
+  // agent ownership
+  $("owners").innerHTML = OWNERS.map(o=>{
+    const owner = o[1] ? esc(o[1]) : '<span class="pill none">none</span>';
+    const inf = o[1] ? '—' : (o[2]?`${esc(o[2])} <span class="pill inf">inferred</span>`:'<span style="color:var(--muted)">no usage</span>');
+    const vis = o[3] ? '<span class="pill pub">public</span>' : '<span class="pill priv">private</span>';
+    return `<tr><td>${esc(o[0])}</td><td>${owner}</td><td>${inf}</td><td>${vis}</td></tr>`;
+  }).join("");
 }
+function $(id){return document.getElementById(id);}
+function kpi(v,l){return `<div class="kpi"><div class="n">${v}</div><div class="l">${l}</div></div>`;}
+
+// ---- charts ----
+function lineChart(svg, series, key){
+  if(!series.length){svg.innerHTML="";return;}
+  const W=1100,H=240,P=34,max=Math.max(...series.map(d=>d[key]),1),n=series.length;
+  const x=i=>P+(n<=1?0:(i/(n-1))*(W-2*P)), y=v=>H-P-(v/max)*(H-2*P);
+  const line=series.map((d,i)=>`${i?'L':'M'}${x(i).toFixed(1)},${y(d[key]).toFixed(1)}`).join(" ");
+  const area=`${line} L${x(n-1).toFixed(1)},${H-P} L${x(0).toFixed(1)},${H-P} Z`;
+  const ticks=[0,.5,1].map(f=>{const v=Math.round(max*f);return `<line x1="${P}" y1="${y(v)}" x2="${W-P}" y2="${y(v)}" stroke="#e6ebf3"/><text x="4" y="${(y(v)+3).toFixed(1)}">${v}</text>`}).join("");
+  const step=Math.max(1,Math.ceil(n/7));
+  const xl=series.map((d,i)=>(i%step===0||i===n-1)?`<text x="${x(i).toFixed(1)}" y="${H-P+16}" text-anchor="middle">${d.day.slice(5)}</text>`:"").join("");
+  const dots=series.map((d,i)=>`<circle cx="${x(i).toFixed(1)}" cy="${y(d[key]).toFixed(1)}" r="2.6" fill="#2451b8"><title>${d.day}: ${d[key]} sessions · most active: ${esc(d.top_user)} (${d.top_user_sessions})</title></circle>`).join("");
+  svg.innerHTML=`${ticks}<path d="${area}" fill="rgba(36,81,184,.12)"/><path d="${line}" fill="none" stroke="#2451b8" stroke-width="2.5"/>${dots}${xl}`;
+}
+function barsChart(svg, data){
+  if(!data.length){svg.innerHTML="";return;}
+  const W=1100,H=240,P=34,max=Math.max(...data.map(d=>d.value),1),n=data.length,gap=(W-2*P)/n,bw=gap*0.66;
+  const y=v=>H-P-(v/max)*(H-2*P);
+  const ticks=[0,.5,1].map(f=>{const v=Math.round(max*f);return `<line x1="${P}" y1="${y(v)}" x2="${W-P}" y2="${y(v)}" stroke="#e6ebf3"/><text x="4" y="${(y(v)+3).toFixed(1)}">${v}</text>`}).join("");
+  const bars=data.map((d,i)=>{const bx=P+gap*i+(gap-bw)/2,by=y(d.value);return `<rect x="${bx.toFixed(1)}" y="${by.toFixed(1)}" width="${bw.toFixed(1)}" height="${(H-P-by).toFixed(1)}" rx="2" fill="${PAL[i%PAL.length]}"><title>${esc(d.label)}: ${d.value}</title></rect>`}).join("");
+  const step=Math.max(1,Math.ceil(n/7));
+  const xl=data.map((d,i)=>(i%step===0||i===n-1)?`<text x="${(P+gap*i+gap/2).toFixed(1)}" y="${H-P+16}" text-anchor="middle">${esc(d.label)}</text>`:"").join("");
+  svg.innerHTML=`${ticks}${bars}${xl}`;
+}
+let DREST=[];
+function donut(rows){
+  rows=rows.filter(d=>d.value>0);
+  const top=rows.slice(0,7); DREST=rows.slice(7);
+  const slices=top.slice(); if(DREST.length) slices.push({label:`+${DREST.length} more`, value:DREST.reduce((s,d)=>s+d.value,0), more:true});
+  const total=slices.reduce((s,d)=>s+d.value,0),cx=120,cy=120,r=95,rin=58; let ang=-Math.PI/2;
+  const arcs=slices.map((d,i)=>{const fr=d.value/total,a2=ang+fr*2*Math.PI,lg=fr>.5?1:0;const p=(a,rr)=>[cx+rr*Math.cos(a),cy+rr*Math.sin(a)];
+    const[x1,y1]=p(ang,r),[x2,y2]=p(a2,r),[x3,y3]=p(a2,rin),[x4,y4]=p(ang,rin);ang=a2;
+    const c=d.more?"#c2cfe6":PAL[i%PAL.length];
+    return `<path d="M${x1.toFixed(1)},${y1.toFixed(1)} A${r},${r} 0 ${lg} 1 ${x2.toFixed(1)},${y2.toFixed(1)} L${x3.toFixed(1)},${y3.toFixed(1)} A${rin},${rin} 0 ${lg} 0 ${x4.toFixed(1)},${y4.toFixed(1)} Z" fill="${c}"><title>${esc(d.label)}: ${d.value}</title></path>`;}).join("");
+  const legend=slices.map((d,i)=>{
+    if(d.more) return `<div class="barrow morerow" style="cursor:pointer" onclick="toggleRest(this)"><span class="dot" style="background:#c2cfe6"></span><span class="lab" style="color:#2451b8">+${DREST.length} more — click to expand</span><span class="num">${d.value}</span></div><div class="drest" style="display:none"></div>`;
+    return `<div class="barrow"><span class="dot" style="background:${PAL[i%PAL.length]}"></span><span class="lab">${esc(d.label)}</span><span class="num">${d.value}</span></div>`;
+  }).join("");
+  $("donut").innerHTML=`<div style="display:flex;gap:18px;align-items:center;flex-wrap:wrap"><svg viewBox="0 0 240 240" width="190" height="190" style="flex:none">${arcs}<text x="120" y="115" text-anchor="middle" style="font-size:12px">total</text><text x="120" y="138" text-anchor="middle" style="font-size:20px;fill:#16243a;font-family:Poppins">${total}</text></svg><div class="legend" style="flex:1;min-width:200px">${legend}</div></div>`;
+}
+function toggleRest(row){
+  const box=row.nextElementSibling; if(!box) return;
+  if(box.style.display==="none"){ box.innerHTML=DREST.map(d=>`<div class="barrow"><span class="dot" style="background:#aebfe0"></span><span class="lab">${esc(d.label)}</span><span class="num">${d.value}</span></div>`).join(""); box.style.display=""; row.querySelector(".lab").textContent="− show less"; }
+  else { box.style.display="none"; row.querySelector(".lab").textContent=`+${DREST.length} more — click to expand`; }
+}
+let TEAMS=[],TTOTAL=0;
+function teamsChart(teams){
+  TEAMS=teams; TTOTAL=teams.reduce((s,t)=>s+t.sessions,0)||1;
+  const max=Math.max(...teams.map(t=>t.sessions),1);
+  $("teams").innerHTML=`<div class="teamwrap"><div class="teambars">`+
+    teams.map((t,i)=>`<div class="trow${i===0?' hot':''}" onmouseenter="hiTeam(${i})" onmouseleave="hiTeam(-1)"><span class="tn">${esc(t.name)}${t.unassigned?' <span class="pill api">no team</span>':''}</span><span class="tt"><span class="tf" style="width:${(t.sessions/max*100).toFixed(1)}%;background:${PAL[i%PAL.length]}"></span></span><span class="tnum">${fmt(t.sessions)}</span></div>`).join("")+
+    `</div><div class="tdetail" id="tdetail"></div></div>`;
+  showTeam(0);
+}
+function hiTeam(i){
+  const rows=document.querySelectorAll("#teams .trow");
+  if(i<0){ rows.forEach((r,j)=>{r.classList.remove("dim"); r.classList.toggle("hot",j===0);}); showTeam(0); return; }
+  rows.forEach((r,j)=>{ r.classList.toggle("hot",j===i); r.classList.toggle("dim",j!==i); }); showTeam(i);
+}
+function showTeam(i){
+  const t=TEAMS[i]; if(!t) return; const share=(t.sessions/TTOTAL*100).toFixed(0);
+  const avg=t.using?Math.round(t.sessions/t.using):0;
+  $("tdetail").innerHTML=`<div class="tdn">${esc(t.name)}</div><div class="tdgrid"><div><b>${fmt(t.sessions)}</b><span>sessions</span></div><div><b>${share}%</b><span>of usage</span></div><div><b>${avg}</b><span>avg / user</span></div><div><b>${t.using}/${t.members}</b><span>using</span></div></div>`;
+}
+render();
 </script>
 </body>
 </html>
